@@ -234,7 +234,7 @@ type Watcher struct {
 
 The global the hierarchy relation is like this
 
-![watcher](/public/images/read_revel/watcher.png)
+![watcher](images/read_revel/watcher.png)
 
 `Harness` has a ability to be a `DiscerningListener`
 

@@ -7,7 +7,7 @@ html pages, such as errors, regular home page and so on.
 Revel uses go official template, also a similar way to maintain the templates. It abstract a
 template loader. It is like a small database.
 
-![template_loader](/public/images/read_revel/template_loader.png)
+![template_loader](images/read_revel/template_loader.png)
 
 ## Structure - templateLoader
 

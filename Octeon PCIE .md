@@ -11,7 +11,7 @@ OCTEON CPU提供对PCI/PCIE总线的支持，其中，它既可以当做EP(Pcie 
 通过这两个ports，外部可以访问cavium自身的memory，cavium也可以通过它访问外部的内存,从而实现ep和rc之间的数据交互。
 下面是关于这部分的一个框图：
 
-![sli_diag](/public/images/oct_pcie/sli_diagram.png)
+![sli_diag](images/oct_pcie/sli_diagram.png)
 
 cavium将pci可以访问的资源做了一个抽象，其中主要有下面几种：
 
@@ -31,12 +31,12 @@ cavium将pci可以访问的资源做了一个抽象，其中主要有下面几�
 
 cavium通过一个输入队列来接收rc的数据包，队列中的每个entry的结构如下图：
 
-![in_entry](/public/images/oct_pcie/in_entry.png)
+![in_entry](images/oct_pcie/in_entry.png)
 
 - DPTR:指向数据部分的指针。
 - DPI_INST_HDR:每个entry的head，用于描述该数据的属性，具体的字段如下：
 
-![entry_head](/public/images/oct_pcie/entry_head.png)
+![entry_head](images/oct_pcie/entry_head.png)
 
 主要包括数据包的group，length，tag，qos等等。
 其中有个gather list的概念，它的意思是该entry中的DPTR指向的不是数据的内容，而是指向一系列数据的指针，是一个二级指针。
@@ -278,12 +278,12 @@ Q:那么cavium将数据包发到哪里呢？
 
 A:rc会提供的output queue，和input queue类似，队列中的entry包含2个指针：
 
-![out_entry](/public/images/oct_pcie/out_entry.png)
+![out_entry](images/oct_pcie/out_entry.png)
 
 其中`buffer pointer`指向数据包的内容，
 而`info pointer`则指向一个描述数据包属性的结构体：
 
-![info_entry](/public/images/oct_pcie/info_entry.png)
+![info_entry](images/oct_pcie/info_entry.png)
 
 好了，明确了这两个问题，那么接收的流程大致是这样的：
 

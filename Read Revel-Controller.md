@@ -463,7 +463,7 @@ result.Apply(c.Request, c.Response)
 ~~~
 So the work flow is like this:
 
-![invoke_flow](/public/images/read_revel/invoke_flow.png)
+![invoke_flow](images/read_revel/invoke_flow.png)
 
 ### Method - Render
 Render a template corresponding to the calling Controller method.

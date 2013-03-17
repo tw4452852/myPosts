@@ -72,7 +72,7 @@ type SourceInfo struct {
 
 The global organization of these structures are like this:
 
-![type_org](/public/images/read_revel/type_org.png)
+![type_org](images/read_revel/type_org.png)
 
 `TestSuites` and `controllerSpecs` are the same structures in representing.
 We will take a look at `controllerSpecs` in details.
@@ -121,7 +121,7 @@ type embeddedTypeName struct {
 }
 ~~~
 
-![controller_specs](/public/images/read_revel/controller_specs.png)
+![controller_specs](images/read_revel/controller_specs.png)
 
 Now, you may understand the relationship and meanings of above structure.
 Next step, we will go through the procedure of building up this organization.
@@ -269,6 +269,6 @@ for _, spec := range specs {
 
 Well, all the procedures of the parse source progress are here. The parsing strategy is
 
-![parse_strategy](/public/images/read_revel/parse_strategy.png)
+![parse_strategy](images/read_revel/parse_strategy.png)
 
 To be continue...

@@ -100,7 +100,7 @@ type tValue struct {
 
 So all the configurations is formed up a tree with these two structures.
 
-![config_tree](/public/images/read_revel/config_tree.png)
+![config_tree](images/read_revel/config_tree.png)
 
 ### Section
 
