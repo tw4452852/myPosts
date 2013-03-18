@@ -1,4 +1,0 @@
-myPosts
-=======
-
-my posts
