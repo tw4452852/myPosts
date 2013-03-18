@@ -9,7 +9,7 @@ Let's start with a simple one
 
 Definition is:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type PlaintextErrorResult struct {
 	Error error
 }
@@ -17,7 +17,7 @@ type PlaintextErrorResult struct {
 
 Its Apply method is:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 // This method is used when the template loader or error template is not available.
 func (r PlaintextErrorResult) Apply(req *Request, resp *Response) {
 	resp.WriteHeader(http.StatusInternalServerError, "text/plain")
@@ -31,7 +31,7 @@ Just set status code and error string.
 This result handles all kinds of error codes (500, 404, ..).
 It renders the relevant error page (errors/CODE.format, e.g. errors/500.json).
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type ErrorResult struct {
 	RenderArgs map[string]interface{}
 	Error      error
@@ -40,7 +40,7 @@ type ErrorResult struct {
 
 And its `Apply` method. Firstly get error template.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 format := req.Format
 status := resp.Status
 if status == 0 {
@@ -60,7 +60,7 @@ tmpl, err := MainTemplateLoader.Template(templatePath)
 
 If template is not found, use `PlaintextErrorResult` to show the error info.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 showPlaintext := func(err error) {
 	PlaintextErrorResult{fmt.Errorf("Server Error:\n%s\n\n"+
 		"Additionally, an error occurred when rendering the error page:\n%s",
@@ -78,7 +78,7 @@ if tmpl == nil {
 
 At last, render the template and push the result into the http response.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 // If it's not a revel error, wrap it in one.
 var revelError *Error
 switch e := r.Error.(type) {
@@ -117,12 +117,12 @@ b.WriteTo(resp.Out)
 
 This just handle the html string directly.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RenderHtmlResult struct {
 	html string
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r RenderHtmlResult) Apply(req *Request, resp *Response) {
 	resp.WriteHeader(http.StatusOK, "text/html")
 	resp.Out.Write([]byte(r.html))
@@ -134,12 +134,12 @@ func (r RenderHtmlResult) Apply(req *Request, resp *Response) {
 This handle `application/json`. Just use `json.MarshalIndent` or `json.Marshal` according to the
 configure `results.pretty`.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RenderJsonResult struct {
 	obj interface{}
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r RenderJsonResult) Apply(req *Request, resp *Response) {
 	var b []byte
 	var err error
@@ -163,12 +163,12 @@ func (r RenderJsonResult) Apply(req *Request, resp *Response) {
 
 This handle `application/xml`.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RenderXmlResult struct {
 	obj interface{}
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r RenderXmlResult) Apply(req *Request, resp *Response) {
 	var b []byte
 	var err error
@@ -192,12 +192,12 @@ func (r RenderXmlResult) Apply(req *Request, resp *Response) {
 
 This handle `application/plain`.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RenderTextResult struct {
 	text string
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r RenderTextResult) Apply(req *Request, resp *Response) {
 	resp.WriteHeader(http.StatusOK, "text/plain")
 	resp.Out.Write([]byte(r.text))
@@ -208,7 +208,7 @@ func (r RenderTextResult) Apply(req *Request, resp *Response) {
 This handle binary files. It contain the file-name ,file-length and disposition if any. All these
 informations will be set in the html header.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type ContentDisposition string
 
 var (
@@ -223,7 +223,7 @@ type BinaryResult struct {
 	Delivery ContentDisposition
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r *BinaryResult) Apply(req *Request, resp *Response) {
 	disposition := string(r.Delivery)
 	if r.Name != "" {
@@ -242,12 +242,12 @@ func (r *BinaryResult) Apply(req *Request, resp *Response) {
 ## Structure - RedirectToUrlResult
 This handle http redirection.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RedirectToUrlResult struct {
 	url string
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r *RedirectToUrlResult) Apply(req *Request, resp *Response) {
 	resp.Out.Header().Set("Location", r.url)
 	resp.WriteHeader(http.StatusFound, "")
@@ -257,12 +257,12 @@ func (r *RedirectToUrlResult) Apply(req *Request, resp *Response) {
 ## Structure - RedirectToActionResult
 Revel supports not only redirection based on the url itself, but also based on method.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type RedirectToActionResult struct {
 	val interface{}
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (r *RedirectToActionResult) Apply(req *Request, resp *Response) {
 	url, err := getRedirectUrl(r.val)
 	if err != nil {

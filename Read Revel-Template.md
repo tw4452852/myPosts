@@ -13,7 +13,7 @@ template loader. It is like a small database.
 
 `templateLoader` object handles loading and parsing of templates.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type TemplateLoader struct {
 	// This is the set of all templates under views
 	templateSet *template.Template
@@ -29,7 +29,7 @@ type TemplateLoader struct {
 ### Method - NewTemplateLoader
 To build a template loader , the only thing you should prepare is the base path of searching.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func NewTemplateLoader(paths []string) *TemplateLoader {
 	loader := &TemplateLoader{
 		paths: paths,
@@ -43,7 +43,7 @@ This method scans the views directory and parses all templates as Go templates
 
 It go through every file under base path and builds up a template set in the end.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (loader *TemplateLoader) Refresh() *Error {
 	TRACE.Println("Refresh")
 	loader.compileError = nil
@@ -74,7 +74,7 @@ func (loader *TemplateLoader) Refresh() *Error {
 
 The callback function is to read every template file content and add it into template set
 
-~~~ {prettyprint lang-c}
+~~~ {prettyprint lang-go lang-c}
 			if err != nil {
 				ERROR.Println("error walking templates:", err)
 				return nil
@@ -160,7 +160,7 @@ The callback function is to read every template file content and add it into tem
 Return the template with given name. The name is the template's path relative to a template loader
 root
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (loader *TemplateLoader) Template(name string) (Template, error) {
 	// Look up and return the template.
 	tmpl := loader.templateSet.Lookup(name)
@@ -184,7 +184,7 @@ func (loader *TemplateLoader) Template(name string) (Template, error) {
 ## Structure - GoTemplate
 
 To overwrite go standard template, it wrapped go `*template.TemplateLoader`.
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type GoTemplate struct {
 	*template.Template
 	loader *TemplateLoader
@@ -193,14 +193,14 @@ type GoTemplate struct {
 
 And it has two methods for satisfying `revel.Template` interface.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type Template interface {
 	Name() string
 	Content() []string
 	Render(wr io.Writer, arg interface{}) error
 }
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (gotmpl GoTemplate) Render(wr io.Writer, arg interface{}) error {
 	return gotmpl.Execute(wr, arg)
 }
@@ -221,12 +221,12 @@ a simple `"a == b"` test.
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 <div class="message {{if eq .User "you"}}you{{end}}">
 ~~~
 The `eq` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "eq":  func(a, b interface{}) bool { return a == b },
 ~~~
 
@@ -236,14 +236,14 @@ Set a variable in the given context.
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 {{set . "title" "Basic Chat room"}}
 
 <h1>{{.title}}</h1>
 ~~~
 The `set` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "set": func(renderArgs map[string]interface{}, key string, value interface{}) template.HTML {
 	renderArgs[key] = value
 	return template.HTML("")
@@ -256,7 +256,7 @@ Add a variable to an array, or start an array, in the given context.
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 {{append . "moreScripts" "js/jquery-ui.js"}}
 
 {{range .moreScripts}}
@@ -266,7 +266,7 @@ Usage:
 
 The `append` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "append": func(renderArgs map[string]interface{}, key string, value interface{}) template.HTML {
 	if renderArgs[key] == nil {
 		renderArgs[key] = []interface{}{value}
@@ -283,7 +283,7 @@ A helper for input fields
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 {{with $field := field "booking.CheckInDate" .}}
 	<p class = "error">
 	<strong>Check In Date:</strong>
@@ -295,7 +295,7 @@ Usage:
 
 The `field` function:
 
-~~~ {prettyprint linenums}
+~~~ {prettyprint lang-go linenums}
 "field": func(name string, renderArgs map[string]interface{}) *Field {
 	value, _ := renderArgs["flash"].(map[string]string)[name]
 	err, _ := renderArgs["errors"].(map[string]*ValidationError)[name]
@@ -309,7 +309,7 @@ The `field` function:
 
 The `field` structure:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type Field struct {
 	Name, Value string
 	Error       *ValidationError
@@ -318,7 +318,7 @@ type Field struct {
 
 It has two helper methods.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func (f *Field) ErrorClass() string {
 	if f.Error != nil {
 		return ERROR_CLASS
@@ -341,7 +341,7 @@ Assists in constructing HTML `option` elements, in conjunction with the field he
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 {{with $field := field "booking.Beds" .}}
 <select name="{{$field.Name}}">
 	{{option $field "1" "One king-size bed"}}
@@ -353,7 +353,7 @@ Usage:
 
 The `option` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "option": func(f *Field, val, label string) template.HTML {
 	selected := ""
 	if f.Value == val {
@@ -369,7 +369,7 @@ Assists in constructing HTML radio input elements, in conjunction with the field
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 {{with $field := field "booking.Smoking" .}}
 	{{radio $field "true"}} Smoking
 	{{radio $field "false"}} Non smoking
@@ -378,7 +378,7 @@ Usage:
 
 The `radio` function:
 
-~~~ {prettyprint linenums}
+~~~ {prettyprint lang-go linenums}
 "radio": func(f *Field, val string) template.HTML {
 	checked := ""
 	if f.Value == val {
@@ -395,13 +395,13 @@ Pads the given string with &nbsp;'s up to given width
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 <h1>{{pad "hello" 10}}</h1>
 ~~~
 
 The `pad` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "pad": func(str string, width int) template.HTML {
 	if len(str) >= width {
 		return template.HTML(html.EscapeString(str))
@@ -416,7 +416,7 @@ If there was an error, it output the literal string "error", else "".
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 <p class={{errorClass "error" .}}>
 <h2>Some error happend</h2>
 </p>
@@ -424,7 +424,7 @@ Usage:
 
 The `errorClass` function:
 
-~~~ {prettyprint linenums}
+~~~ {prettyprint lang-go linenums}
 "errorClass": func(name string, renderArgs map[string]interface{}) template.HTML {
 	errorMap, ok := renderArgs["errors"].(map[string]*ValidationError)
 	if !ok {
@@ -446,16 +446,16 @@ Return a url capable of invoking a given controller method:
 
 Usage:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 <a href={{url "Application.ShowApp" "123"}}> Apps </a>
 ~~~
 
 The `url` function:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 "url": ReverseUrl,
 ~~~
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func ReverseUrl(args ...interface{}) string {
 	if len(args) == 0 {
 		ERROR.Println("Warning: no arguments provided to url function")

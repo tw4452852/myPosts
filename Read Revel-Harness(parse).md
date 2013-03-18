@@ -11,7 +11,7 @@ Yeah, this is what we should talk about - harness module.
 
 This module do following three things:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 
 // It has a couple responsibilities:
 // 1. Parse the user program, generating a main.go file that registers
@@ -40,7 +40,7 @@ TemplatePaths:	$viewsPath:$RevelPath/templates:/path/to/modules/views
 
 Ok, let's start the parse journey. The start point is the function `ProcessSource`. It is
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 func ProcessSource(roots []string) (*SourceInfo, *rev.Error)
 ~~~
 - roots is the `CodePaths`(see above).
@@ -48,7 +48,7 @@ func ProcessSource(roots []string) (*SourceInfo, *rev.Error)
 
 ### Structures
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 // SourceInfo is the top-level struct containing all extracted information
 // about the app source code, used to generate main.go.
 type SourceInfo struct {
@@ -78,7 +78,7 @@ The global organization of these structures are like this:
 We will take a look at `controllerSpecs` in details.
 A sample `controllerSpec` is just like this:
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 type TypeInfo struct {
 	StructName  string // e.g. "Application"
 	ImportPath  string // e.g. "github.com/robfig/revel/samples/chat/app/controllers"
@@ -129,7 +129,7 @@ Next step, we will go through the procedure of building up this organization.
 With the help of `go` package in standard lib, analysing go code becomes very simple.
 `ProcessSource` just go through all the directories in the `CodePaths`
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 for _, root := range roots {
 	// Start walking the directory tree.
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -145,7 +145,7 @@ for _, root := range roots {
 ~~~
 And find all the packages in the directories
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 var pkgs map[string]*ast.Package
 fset := token.NewFileSet()
 pkgs, err = parser.ParseDir(fset, path, func(f os.FileInfo) bool {
@@ -154,7 +154,7 @@ pkgs, err = parser.ParseDir(fset, path, func(f os.FileInfo) bool {
 ~~~
 Of course, the `main` package is skipped. And go through the packages that founded.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 // Skip "main" packages.
 delete(pkgs, "main")
 ...
@@ -164,7 +164,7 @@ srcInfo = appendSourceInfo(srcInfo, processPackage(fset, pkgImportPath, path, pk
 Within every package, it goes through all the files in the package and extracts all the structures
 and methods firstly.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 for _, file := range pkg.Files {
 
 	// Imports maps the package key to the full import path.
@@ -187,7 +187,7 @@ for _, file := range pkg.Files {
 - Note: boolean variables `scanControllers` and `scanTests` depend on whether the `pkgImportPath`
   contains the specified directory respectively.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 scanControllers = strings.HasSuffix(pkgImportPath, "/controllers") ||
 	strings.Contains(pkgImportPath, "/controllers/")
 scanTests = strings.HasSuffix(pkgImportPath, "/tests") ||
@@ -198,7 +198,7 @@ scanTests = strings.HasSuffix(pkgImportPath, "/tests") ||
 If a structure has anonymous fields, it will be logged in the `embeddedTypes` in the
 `controllerSpecs`. It will be used for the filtering later.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 for _, field := range structType.Fields.List {
 	// If field.Names is set, it's not an embedded type.
 	if field.Names != nil {
@@ -217,7 +217,7 @@ added.
 After finding all the structures specs, it filter out the controller specs and test suits specs by
 `findTypesThatEmbed`
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 // Returnall types that (directly or indirectly) embed the target type.
 func findTypesThatEmbed(targetType string, specs []*TypeInfo) (filtered []*TypeInfo)
 ~~~
@@ -228,7 +228,7 @@ The `findTypesThatEmbed` function is interesting, we will take a look for a whil
 There is a queue to save the uncheck type names.
 At first time, it only contain the input parameter `targetType`.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 nodeQueue := []string{targetType}
 for len(nodeQueue) > 0 {
 }
@@ -237,7 +237,7 @@ return
 
 Every loop, it get the head element from the queue as the expected type name.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 		controllerSimpleName := nodeQueue[0]
 		nodeQueue = nodeQueue[1:]
 ~~~
@@ -247,7 +247,7 @@ it will also be added into the `nodeQueue`.
 So, if type A embed the expected type, then all the structures that embed type A are also the
 expected types.
 
-~~~ {prettyprint}
+~~~ {prettyprint lang-go}
 for _, spec := range specs {
 	if rev.ContainsString(nodeQueue, spec.String()) {
 		continue // Already added
