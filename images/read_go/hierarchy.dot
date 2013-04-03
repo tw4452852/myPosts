@@ -1,0 +1,13 @@
+digraph hierarchy {
+	rankdir = "BT"
+	title [label = "memory hierarchy", shape = "plaintext"];
+	os [label = "OS memeory allocator"];
+	mheap [label = "mheap"];
+	mcentral [label = "mcentral free list"];
+	mcache [label = "mcache free list"];
+
+	mcache->mcentral [label = "如果线程本地内存无法满足要求"];
+	mcentral->mheap [label = "如果中心内存管理无法满足要求"];
+	mheap->os [label = "heap无法满足要求"];
+	os->title [style = "invis"];
+}

@@ -1,0 +1,26 @@
+digraph abc {
+node [shape = "record"];
+rankdir = LR;
+
+	subgraph cluster_v32 {
+		label = "32bits high addr -> low addr";
+		subgraph cluster_arena32 {
+			label = "memory arenas\n total size \<=2G"
+			rankdir = TB
+			arenaN [label = "memory\ arenaN size = 512Mb", style = "filled", fillcolor = "hotpink"];
+			arenaOmit [label = "...", shape = "plaintext"];
+			arena32 [label = "memory\ arena1 size = 512Mb", style = "filled", fillcolor = "hotpink"];
+			{rank = "same"; arena32; arenaOmit;arenaN}
+		}
+		map32 [label = "bitmap size = 512Mb\n start at end+256Kb", style = "filled", fillcolor = "skyblue"];
+	}
+
+	subgraph cluster_v64 {
+		label = "64bits";
+		arena64 [label = "memory\ arena\n total size = 128Gb", style = "filled", fillcolor = "hotpink"];
+		map64 [label = "bitmap size = 8Gb\n start at 0xc0\<\<32", style = "filled", fillcolor = "skyblue"];
+		{rank = "same"; arena64; map64;}
+	}
+
+	map32 -> map64 [style = "invis"];
+}

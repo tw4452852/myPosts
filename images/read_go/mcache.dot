@@ -1,0 +1,32 @@
+digraph mcache {
+	classes [shape = "plaintext", label = <
+	<table>
+	<tr>
+	<td port="c1">
+	<font>Class1</font>
+	</td>
+	<td port="c2">
+	<font>Class2</font>
+	</td>
+	<td port="c3">
+	<font>Class3</font>
+	</td>
+	<td>
+	<font>...</font>
+	</td>
+	<td port="c60">
+	<font>Class60</font>
+	</td>
+
+	</tr>
+	</table>>];
+	node [shape = "box", label = "object"];
+	classes:c1 -> o11 [label = "list"];
+	o11 -> o12 -> o13 -> o14
+	classes:c2 -> o21 [label = "list"];
+	o21 -> o22
+	classes:c3 ->o31 [label = "list"];
+	o31 -> o32 ->o33
+	classes:c60 -> o601 [label = "list"];
+}
+
