@@ -1,0 +1,8 @@
+digraph span {
+	node [shape = "record"];
+	s [label = "span", style = "filled", fillcolor = "skyblue"];
+	node [label = "page", style = "filled", fillcolor = "pink"];
+	s -> p1
+	s -> p2
+	s -> p3
+}

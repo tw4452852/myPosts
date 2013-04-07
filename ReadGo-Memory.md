@@ -170,3 +170,40 @@ mcache代表每个pthread本地的小内存cache。
 而将没有空闲内存的span放在另外一个list中。
 
 ![mcentral](images/read_go/mcentral.png)
+
+### mheap
+
+---
+
+对于大内存的申请和释放（大于32K）是直接在heap上按page进行的。
+其中主要的概念为span和mheap。
+
+首先说一下span，span负责管理地址连续的一系列的pages：
+
+![span](images/read_go/span.png)
+
+而mheap中则会根据span中包含的page的个数，将不同的span放入到不同的freelist中。
+当然，如果page个数太大，则会放入另外一个统一的large-list中。
+所以，mheap的结构如下：
+
+![mheap](images/read_go/mheap.png)
+
+对于内存的申请，遵循如下步骤：
+
+1. 根据page的个数在相应的freelist中寻找满足的span。
+如果在所有的freelist都没有找到，则到步骤2,否则到步骤4。
+2. 在large list中寻找满足要求的最适合的span
+（这里的最优解：span中的包含的page最少且开始地址最小）。
+如果未找到，则到步骤3,反正则到步骤4。
+3. 向os按page申请一块内存，将其插入到large-list，并返回步骤2。
+4. 根据申请的大小和获取到的span，对span进行必要的切分，
+将多余的pages重新组成新的span，并将其返回到相应的free list中。
+
+
+对于内存的释放，就是将相应的span插入到相应的freelist（或largelist）中。
+当然，在释放过程中，如果与要释放的span相邻的span也没有在用，
+会将其合并成一个较大的span，并统一返回。
+
+Ok, 这些就是内存管理中申请和释放的主要逻辑，
+当然还有一个重要的部分没有讲，那就是垃圾回收机制，
+To be continue ... 
