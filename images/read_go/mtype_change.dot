@@ -1,0 +1,19 @@
+digraph t {
+	node [shape = circle];
+	size = "8,5"
+	
+	MTypes_Empty -> MTypes_Single [label = "alloc a big object\non a new span"];
+	MTypes_Empty -> MTypes_Bytes [label = "alloc a small object\non a new span"];
+	MTypes_Bytes -> MTypes_Bytes [label = "allow a small object on a exist span\nwhich has at most 7 types"];
+	MTypes_Bytes -> MTypes_Words [label = "allow a small object on a exist span\nwich has more than 7 types"];
+	MTypes_Words -> MTypes_Words [label = "allow a small object on a exist span\nwhich already has more than 7 types"];
+
+	MTypes_Single [style = filled, fillcolor = pink];
+	MTypes_Bytes [style = wedged, fillcolor = "skyblue:coral:pink"];
+	MTypes_Words [style = wedged, fillcolor = "skyblue:coral:orchid:palegreen:orange:yellow:grey:pink"];
+
+	edge [label = "be freed"];
+	MTypes_Words -> MTypes_Empty;
+	MTypes_Bytes -> MTypes_Empty;
+	MTypes_Single -> MTypes_Empty;
+}

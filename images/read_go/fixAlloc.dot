@@ -1,0 +1,20 @@
+digraph {
+node [shape = "box"];
+rankdir = LR
+
+	subgraph cluster_chunk {
+		label = "A memory chunk \l";
+		labeljust = "l";
+		bgcolor = "skyblue";
+		
+		subgraph cluster_freelist {
+			label = "free list"
+			obj1 [label = "object", style = "filled", fillcolor = "coral"];
+			obj2 [label = "object", style = "filled", fillcolor = "coral"];
+			obj3 [label = "object", style = "filled", fillcolor = "coral"];
+			obj4 [label = "...", shape = "plaintext"];
+
+			obj1->obj2->obj3->obj4
+		}
+	}
+}

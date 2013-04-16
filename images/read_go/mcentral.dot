@@ -1,0 +1,72 @@
+digraph mcentral {
+	rankdir = "LR"
+	cs [shape = "plaintext", label = <
+	<table>
+
+	<tr>
+	<td port="c1">
+	class1
+	</td>
+	</tr>
+
+	<tr>
+	<td port="c2">
+	class2
+	</td>
+	</tr>
+
+	<tr>
+	<td port="c3">
+	class3
+	</td>
+	</tr>
+
+	<tr>
+	<td>
+	...
+	</td>
+	</tr>
+
+	<tr>
+	<td port="c60">
+	class60
+	</td>
+	</tr>
+
+	</table>>];
+
+	node [shape = "plaintext", label = <
+	<table>
+
+	<tr>
+	<td port="h">
+	mcentral
+	</td>
+	</tr>
+
+	<tr>
+	<td port="e">
+	empty
+	</td>
+	</tr>
+
+	<tr>
+	<td port="ne">
+	noempty
+	</td>
+	</tr>
+
+	</table>>];
+	cs:c1 -> mc1:h;
+	cs:c2 -> mc2:h;
+	cs:c3 -> mc3:h;
+	cs:c60 -> mc60:h;
+
+	node [shape = "Mrecord", label = "span", style = "filled", fillcolor = "skyblue"];
+	mc1:e -> se11 -> se12 -> se13;
+	mc1:ne -> sne11 -> sne12 -> sne13 -> sne14;
+	mc2:e -> se21 -> se22;
+	mc3:ne -> sne31 -> sne32 -> sne33;
+	mc60:e -> se601;
+	mc60:ne -> sne601;
+}

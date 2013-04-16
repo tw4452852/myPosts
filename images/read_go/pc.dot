@@ -1,0 +1,3 @@
+digraph t {
+	pc [shape = "record", label = "opcode1 | arguments1 | opcode2 | opcode3 | argument1 | argument2 | ..."];
+}

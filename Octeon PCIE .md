@@ -58,7 +58,8 @@ cavium通过一个输入队列来接收rc的数据包，队列中的每个entry�
 
 首先是初始化管理数据结构:
 
-~~~
+
+~~~ {prettyprint lang-c}
 octeon_setup_instr_queues:
 
 	for(i = 0; i < num_iqs; i++) {
@@ -77,7 +78,7 @@ octeon_setup_instr_queues:
 
 接着是申请用于数据发送的dma内存：
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_instr_queues
  ->octeon_init_instr_queue:
 
@@ -94,7 +95,7 @@ octeon_setup_instr_queues
 
 最后初始化sli相关寄存器, 主要将物理地址，队列的长度，以及队列的id告诉cavium:
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_instr_queues
  ->octeon_init_instr_queue
   ->cn68xx_setup_iq_regs:
@@ -111,7 +112,7 @@ octeon_setup_instr_queues
 当从协议栈收到一个数据包时，最先调用是driver注册的发送回调函数`octnet_xmit`,
 该函数的主要是根据从协议栈收到的数据包形成一个input entry
 
-~~~
+~~~ {prettyprint lang-c}
 octnet_xmit:
 
 	/* Prepare the attributes for the data to be passed to OSI. */
@@ -144,10 +145,10 @@ octnet_xmit:
 
 首先看一下entry是如何形成的：
 
-~~~
+~~~ {prettyprint lang-c}
 octnet_xmit
  ->octnet_prepare_pci_cmd:
-   
+
 	ih           = (octeon_instr_ih_t *)&cmd->ih;
 
 	ih->tagtype  = ORDERED_TAG;
@@ -170,7 +171,7 @@ octnet_xmit
 
 最后我们来看一下通知cavium的方式:
 
-~~~
+~~~ {prettyprint lang-c}
 octnet_xmit
  ->octnet_send_nic_data_pkt
   ->octeon_send_noresponse_command
@@ -231,7 +232,7 @@ octnet_xmit
 如果队列中只有一个空间，继续发送，但是停止后续的发送，直到有更多的空间。
 如果是正常发送，将entry拷贝到input queue中的相应位置
 
-~~~
+~~~ {prettyprint lang-c}
 octnet_xmit
  ->octnet_send_nic_data_pkt
   ->octeon_send_noresponse_command
@@ -246,7 +247,7 @@ octnet_xmit
 
 最后根据发送的结果，更新相应的统计计数:
 
-~~~
+~~~ {prettyprint lang-c}
 octnet_xmit
  ->octnet_send_nic_data_pkt
   ->octeon_send_noresponse_command:
@@ -302,7 +303,7 @@ cavium将数据包的内容拷贝到`buffer pointer`所指向的远端内存中�
 
 首先是初始化管理数据结构：
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_output_queues:
 
 	oct->num_oqs = 0;
@@ -331,7 +332,7 @@ octeon_setup_output_queues:
 
 首先是output queue entry:
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_output_queues
  ->octeon_init_droq:
 
@@ -351,7 +352,7 @@ octeon_setup_output_queues
 
 首先是内存申请：
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_output_queues
  ->octeon_init_droq:
 
@@ -380,7 +381,7 @@ octeon_setup_output_queues
 
 接着是建立流式dma映射：
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_output_queues
  ->octeon_init_droq
   ->octeon_droq_setup_ring_buffers:
@@ -404,7 +405,7 @@ octeon_setup_output_queues
 
 分配好了dma内存，接着便是告诉cavium，即配置sli相应的寄存器：
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_output_queues
  ->octeon_init_droq
   ->cn68xx_setup_oq_regs:
@@ -423,7 +424,7 @@ octeon_setup_output_queues
 下面针对数据包的接收，梳理一下整个流程。
 数据包的接收首先从中断回调函数讲起
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_setup_interrupt:
 
 	irqret = request_irq(oct->pci_dev->irq, octeon_intr_handler,
@@ -495,7 +496,7 @@ octeon_intr_handler
 这里的有必要说下，关于中断的2个触发条件，在现在的配置中，我们只配置了时间因素，而没有用数据包的个数这个因素。
 所以这里有个trick：我们通过读取时间中断的寄存器，就可以判断有哪些queue收到了数据包。
 
-~~~
+~~~ {prettyprint lang-c}
 octeon_intr_handler
  ->cn68xx_interrupt_handler
   ->cn68xx_droq_intr_handler:
@@ -521,7 +522,7 @@ octeon_intr_handler
 
 这个线程的回调函数如下：
 
-~~~
+~~~ {prettyprint lang-c}
 oct_droq_thread:
 
 	while(!droq->stop_thread && !cavium_kthread_signalled())  {
@@ -548,7 +549,7 @@ oct_droq_thread
 - 慢路：如果没有快路回调函数注册，则进入慢路模式。
 在慢路模式中会根据数据包头部的`opcode`,间接的调用与这对应的回调函数，如果没有，则丢弃该数据包
 
-~~~
+~~~ {prettyprint lang-c}
 oct_droq_thread
  ->octeon_droq_process_packets
   ->octeon_droq_slow_process_packets
@@ -572,7 +573,7 @@ oct_droq_thread
 ~~~
 这里之所以说是间接的调用，是因为所有的回调函数都是之后被每条queue上的内核线程统一调用的：
 
-~~~
+~~~ {prettyprint lang-c}
 oct_droq_thread
  ->octeon_droq_process_packets:
 
@@ -587,7 +588,7 @@ oct_droq_thread
 这里由于上层注册了回调函数，进入快路模式，不过在调用注册的回调函数之前，先要做一个基本检查，
 在这里只是检查`info entry`中的数据包长度，如果产度为0，则丢弃。
 
-~~~
+~~~ {prettyprint lang-c}
 oct_droq_thread
  ->octeon_droq_process_packets
   ->octeon_droq_fast_process_packets:
@@ -609,7 +610,7 @@ oct_droq_thread
 
 如果数据包的长度不为0，则调用注册的回调函数
 
-~~~
+~~~ {prettyprint lang-c}
 oct_droq_thread
  ->octeon_droq_process_packets
   ->octeon_droq_fast_process_packets:

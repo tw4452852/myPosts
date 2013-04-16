@@ -1,0 +1,116 @@
+digraph bitmap {
+	rankdir = "LR"
+	size = "7.5,10"
+	node [shape = "plaintext"]
+	subgraph cluster_v64 {
+		label = "64bits bitmap: low addr -> high addr"
+		labeljust = "l"
+
+		map64 [label = <
+		<table>
+		<tr>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitAllocted</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr16<br/>bitAllocted</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitNoPointer or<br/>bitBlockBoundary</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr16<br/>bitNoPointer or<br/>bitBlockBoundary</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitMarked</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr16<br/>bitMarked</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitSpecial</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr16<br/>bitSpecial</font>
+		</td>
+
+		<td>
+		<font color="black">...</font>
+		</td>
+
+		</tr>
+		</table>>];
+
+	}
+	
+	subgraph cluster_v32 {
+		label = "32bits bitmap: low addr -> high addr"
+		labeljust = "l"
+		map32 [label = <
+		<table>
+		<tr>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitAllocted</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr8<br/>bitAllocted</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitNoPointer or<br/>bitBlockBoundary</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr8<br/>bitNoPointer or<br/>bitBlockBoundary</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitMarked</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr8<br/>bitMarked</font>
+		</td>
+
+		<td bgcolor="pink">
+		<font color="black">ptr1<br/>bitSpecial</font>
+		</td>
+		<td>
+		<font color="black">...</font>
+		</td>
+		<td bgcolor="skyblue">
+		<font color="black">ptr8<br/>bitSpecial</font>
+		</td>
+
+		<td>
+		<font color="black">...</font>
+		</td>
+
+		</tr>
+		</table>>];
+	}
+}

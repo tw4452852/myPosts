@@ -1,0 +1,51 @@
+digraph t {
+	rankdir = LR
+	size = "8,5"
+	subgraph cluster_global {
+		label = "global work buffer"
+		node [shape = "plaintext"];
+		es [label = <
+		<table border="0" cellborder="1" cellspacing="0" align="left">
+		<tr>
+		<td>empty stack</td>
+		</tr>
+		<tr>
+		<td port="top">stack top</td>
+		</tr>
+		<tr>
+		<td>...</td>
+		</tr>
+		<tr>
+		<td port="bottom">stack bottom</td>
+		</tr>
+		</table>
+		>];
+
+		fs [label = <
+		<table border="0" cellborder="1" cellspacing="0" align="left">
+		<tr>
+		<td>full stack</td>
+		</tr>
+		<tr>
+		<td port="top">stack top</td>
+		</tr>
+		<tr>
+		<td>...</td>
+		</tr>
+		<tr>
+		<td port="bottom">stack bottom</td>
+		</tr>
+		</table>
+		>];
+	}
+	fb -> fs:bottom [label = "share a work buffer"];
+	fs:top -> fb1 [label = "receive a work buffer"];
+	eb -> es:bottom [label = "free a empty work buffer"];
+	es:top -> eb1 [label = "alloc a empty work buffer"];
+	fb [label = "full work buffer", shape = "Mrecord", style = "filled", fillcolor = "coral"];
+	fb1 [label = "full work buffer", shape = "Mrecord", style = "dashed", fillcolor = "coral"];
+	eb [label = "empty work buffer", shape = "Mrecord", style = "filled", fillcolor = "lightblue"];
+	eb1 [label = "empty work buffer", shape = "Mrecord", style = "dashed", fillcolor = "lightblue"];
+	{rank = "same"; fb; fb1};
+	{rank = "same"; eb; eb1};
+}
