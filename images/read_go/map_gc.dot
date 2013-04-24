@@ -1,0 +1,11 @@
+digraph t {
+	size = "8.5, 11";
+	start [shape = "plaintext", label = "start"];
+	start -> PHASE_BUCKETS;
+	PHASE_BUCKETS -> PHASE_BUCKETS [label = "interact current buckets\nand overflow buckets if any"];
+	PHASE_BUCKETS -> PHASE_OLD_BUCKETS [label = "done"];
+	PHASE_OLD_BUCKETS -> PHASE_OLD_BUCKETS [label = "interact old buckets if any\nand overflow buckets if any"];
+	PHASE_OLD_BUCKETS -> PHASE_TABLE [label = "done"];
+	PHASE_TABLE -> PHASE_OLD_TABLE [label = "gc current hash table done"];
+	PHASE_OLD_TABLE -> PHASE_DONE [label = "gc old hash table done if any"];
+}
