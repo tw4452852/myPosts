@@ -92,6 +92,8 @@ int seq_printf(struct seq_file *m, const char *f, ...)
 
 ## Normal case
 
+---
+
 首先看看一般正常情形下的处理逻辑：
 
 1. start开始迭代
