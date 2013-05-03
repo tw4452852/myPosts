@@ -1,0 +1,9 @@
+digraph t {
+	show [shape = "plaintext"];
+	k [shape = "Mrecord", label = "kernel buffer | <b1> element 1 | <b2> elememt 2 | empty | ..."];
+	u [shape = "Mrecord", label = "user buffer", style = "filled", fillcolor = "skyblue"];
+
+	show -> k:b1
+	show -> k:b2
+	k -> u [style = "dashed", label = "copy as many as possible"];
+}
