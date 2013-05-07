@@ -1,0 +1,8 @@
+digraph t {
+	rankdir = LR;
+	hash [shape = "record", label = "hash table | <b1>low bits of hash1 | <b2>low bits of hash2 | ... | <bn>low bits of hashn"];
+	b1 [shape = "Mrecord", label = "bucket | key1 | ... | key8 | value1 | ... | value 8", style = "filled", fillcolor = "skyblue"]
+	hash:b1 -> b1
+	b2 [shape = "Mrecord", label = "bucket | key1 | key2 | ... | value1 | value2 | ...", style = "filled", fillcolor = "skyblue"];
+	b1 -> b2 [label = "overflow", style = "dashed"];
+}
