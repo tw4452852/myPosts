@@ -1,0 +1,11 @@
+digraph t {
+	node [shape = "Mrecord"];
+	edge [color = "red"];
+	start -> stop [label = "return NULL"];
+	next -> stop [label = "return NULL\nor error"];
+	edge [color = "darkgreen"];
+	start -> show [label = "1"];
+	show -> next [label = "2"];
+	next -> show [label = "3"];
+	show -> stop [label = "4\nuser buffer full"];
+}

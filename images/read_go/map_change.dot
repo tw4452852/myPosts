@@ -1,0 +1,85 @@
+digraph t {
+	rankdir = LR;
+
+	node [shape = "record"];
+	oldt [label = "old table | <b0>index 0 | <b1>index 1"];
+	newt [label = "new table | <b0>index 0 | <b1>index 1 | <b2>index 2 | <b3>index 3"];
+
+	node [shape = "plaintext"];
+	oldb [label = <<table cellspacing="0">
+	<tr>
+	<td>bucket</td>
+	</tr>
+	<tr>
+	<td bgcolor="pink">key1</td>
+	</tr>
+	<tr>
+	<td bgcolor="skyblue">key2</td>
+	</tr>
+	<tr>
+	<td bgcolor="coral">key3</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	<tr>
+	<td bgcolor="pink">value1</td>
+	</tr>
+	<tr>
+	<td bgcolor="skyblue">value2</td>
+	</tr>
+	<tr>
+	<td bgcolor="coral">value3</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	</table>>];
+
+	newb1 [label = <<table cellspacing="0">
+	<tr>
+	<td>bucket</td>
+	</tr>
+	<tr>
+	<td bgcolor="pink">key1</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	<tr>
+	<td bgcolor="pink">value1</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	</table>>];
+
+	newb2 [label = <<table cellspacing="0">
+	<tr>
+	<td>bucket</td>
+	</tr>
+	<tr>
+	<td bgcolor="skyblue">key2</td>
+	</tr>
+	<tr>
+	<td bgcolor="coral">key3</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	<tr>
+	<td bgcolor="skyblue">value2</td>
+	</tr>
+	<tr>
+	<td bgcolor="coral">value3</td>
+	</tr>
+	<tr>
+	<td>empty...</td>
+	</tr>
+	</table>>];
+
+	oldt:b0 -> oldb;
+	newt:b0 -> newb1;
+	newt:b2 -> newb2;
+	oldb -> newt [style = "dotted", label = "after evacuate"];
+}
