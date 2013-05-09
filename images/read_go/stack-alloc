@@ -1,0 +1,21 @@
+digraph t {
+	node [shape = "box"]
+	g [label = "global free list"]
+
+	subgraph ms {
+		rankdir = "LR";
+		rank = "same";
+		node [shape = "Mrecord", label = "M"]
+		m1; m2; m3; m4
+	}
+	edge [label = "refill"]
+	g -> m1
+	g -> m2
+	g -> m3
+	g -> m4
+	edge [label = "release", dir = "back"]
+	g -> m1
+	g -> m2
+	g -> m3
+	g -> m4
+}

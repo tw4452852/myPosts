@@ -1,0 +1,47 @@
+digraph t {
+	old [shape = "plaintext", label = <
+	<table border="0" cellborder="1" cellspacing="0" align="left">
+
+	<tr><td>old stack</td></tr>
+	<tr><td>...</td></tr>
+	<tr><td>...</td></tr>
+	<tr><td port="guard" bgcolor="gray">stack guard</td></tr>
+	<tr><td port="arg2" bgcolor="skyblue">arg2</td></tr>
+	<tr><td port="arg1" bgcolor="skyblue">arg1</td></tr>
+	<tr><td port="pc" bgcolor="pink">return pc</td></tr>
+	<tr><td port="sp" bgcolor="pink">stack top</td></tr>
+	<tr><td>empty</td></tr>
+	<tr><td port="bottom" bgcolor="gray">stack base</td></tr>
+
+	</table>>];
+
+	gobuf [shape = "plaintext", label = <
+	<table border="0" cellborder="1" cellspacing="0" align="left">
+	<tr><td>gobuf</td></tr>
+	<tr><td port="pc" bgcolor="pink">origin return pc</td></tr>
+	<tr><td port="sp" bgcolor="pink">origin stack top</td></tr>
+	<tr><td>origin g</td></tr>
+	</table>>];
+
+	new [shape = "plaintext", label = <
+	<table border="0" cellborder="1" cellspacing="0" align="left">
+
+	<tr><td>new stack</td></tr>
+
+	<tr><td bgcolor="gray" port="guard">stackguard</td></tr>
+	<tr><td bgcolor="gray" port="bottom">stackbase</td></tr>
+	<tr><td port="gobuf">gobuf</td></tr>
+	<tr><td port="arg2" bgcolor="skyblue">arg2</td></tr>
+	<tr><td port="arg1" bgcolor="skyblue">arg1</td></tr>
+	<tr><td>return pc<br/>(runtime·lessstack)</td></tr>
+	<tr><td>empty</td></tr>
+	<tr><td port="bottom">bottom</td></tr>
+
+	</table>>];
+
+	gobuf -> new:gobuf[dir = "both", style = "dashed"]
+	{rank = same; old; gobuf}
+	old:guard -> new:guard[style = "invis"]
+	old:bottom -> new:bottom[style = "invis"]
+	old -> new
+}
