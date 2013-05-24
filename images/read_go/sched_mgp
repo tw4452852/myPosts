@@ -1,0 +1,38 @@
+digraph t {
+	{
+		rank = "same";
+		rankdir = "LR";
+		gs [shape = "plaintext", label = "Tasks:"];
+		node [shape = "Mrecord", label = "G", style = "filled", fillcolor = "skyblue"];
+		g1 -> g2 -> g3 -> g4 -> g5 -> g6 ->g1;
+	}
+
+	{
+		rank = "same";
+		rankdir = "LR";
+		ps [shape = "plaintext", label = "number of P = gomaxprocs"];
+		node [shape = "circle", label = "P", style = "filled", fillcolor = "coral"];
+		edge [style = "invis"];
+		p1 -> p2 -> p3;
+	}
+
+	{
+		rank = "same";
+		rankdir = "LR";
+		ms [shape = "plaintext", label = "Workers:"];
+		node [shape = "box", label = "M", style = "filled", fillcolor = "pink"];
+		m1 -> m2 -> m3 -> m4 -> m1;
+	}
+
+	edge [style = "invis"];
+	g1 -> m1;
+	gs -> ms;
+
+	edge [style = "dashed"];
+
+	edge [dir = "back"];
+	g2 -> p1; g3 -> p2; g4 -> p3;
+
+	edge [dir = "forward"];
+	p1 -> m2; p2 -> m3; p3 -> m4;
+}
