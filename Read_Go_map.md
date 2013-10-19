@@ -26,7 +26,7 @@ Read Go - Map | 2013-04-18
 
 **NOTE**:这里key和value的存储方式会根据实际元素的类型而变化，具体是这样的：
 
-~~~ {prettyprint}
+~~~ 
 if sizeof(key or value)<=128 {
 	inline it;
 } else {
@@ -72,13 +72,13 @@ LOAD | %overflow | bytes/entry | hitprobe | missproble
 这个工作并没有在grow之后，一次性完成，而是逐步的完成（在insert和remove时每次搬移1-2个pair）。
 需要注意的是:那些已经evacuated的buckets会被mark标记：
 
-~~~ {prettyprint}
+~~~ 
 #define evacuated(b) (((uintptr)(b)->overflow & 1) != 0)
 ~~~
 
 在evacuate的过程中，一个old bucket中的pairs会被重新散列到2个不同的new bucket中:
 
-~~~ {prettyprint}
+~~~ 
 if (hashValue & oldTableCapacity == 0) {
 	newBuckets[i] = oldBuckets[i];
 } else {
@@ -114,14 +114,14 @@ if (hashValue & oldTableCapacity == 0) {
 3. 在对应的bucket以及它的overbuckets中，查找对应的pair并将其删除
 （这里的删除，只是将位置信息清0:
 
-~~~ {prettyprint}
+~~~ 
 b->tophash[i] = 0;
 h->count--;
 ~~~
 
 而具体的内存释放，会根据flag去处理:
 
-~~~ {prettyprint}
+~~~ 
 if((h->flags & CanFreeKey) != 0) {
 	runtime·free(k);
 }
@@ -156,7 +156,7 @@ gc的Interation核心是一个状态机：
 每次interact之后返回key/value pair，当然，如果有overflow buckets，也会将其返回。
 具体的数据结构如下：
 
-~~~ {prettyprint}
+~~~ 
 struct hash_gciter_data
 {
 	uint8 *st;			/* internal structure, or nil */

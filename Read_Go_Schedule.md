@@ -20,7 +20,7 @@ Read Go - Schedule | 2013-05-21
 这其实就是os thread在go中的抽象,
 既然是os thread,那么它的创建想必是通过clone系统调用,的确是这样:
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 runtime·newosproc(M *mp, void *stk)
 {
@@ -33,7 +33,7 @@ runtime·newosproc(M *mp, void *stk)
 
 - flag:
 
-~~~ {prettyprint lang-c}
+~~~ 
 flags = CLONE_VM	/* share memory */
 	| CLONE_FS	/* share cwd, etc */
 	| CLONE_FILES	/* share fd table */
@@ -52,7 +52,7 @@ flags = CLONE_VM	/* share memory */
 这样一个M就创建出来,其中每个M都有个id用于标识,
 并且有个全局的M链表(runtime·allm)用于遍历所有的M:
 
-~~~ {prettyprint lang-c}
+~~~ 
 static void
 mcommoninit(M *mp)
 {
@@ -84,7 +84,7 @@ mcommoninit(M *mp)
 
 那么在每次goroutine schedule时,调度器是如何知道goroutine的运行状态呢？
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	G
 {
 	...
@@ -97,7 +97,7 @@ struct	G
 
 - status: 可能的取值如下:
 
-~~~ {prettyprint lang-c}
+~~~ 
 enum
 {
 	Gidle,
@@ -122,7 +122,7 @@ enum
 这样当执行的调度时,如果发现sched.pc为runtime·goexit, 则将PC设置成fnstart,
 其他情况便将PC设置成sched.pc
 
-~~~ {prettyprint lang-c}
+~~~ 
 G*
 runtime·newproc1(FuncVal *fn, byte *argp, int32 narg, int32 nret, void *callerpc)
 {
@@ -185,7 +185,7 @@ P的概念有点像进程环境,它表示程序运行所需的所有的资源,
 - 如果还是没有,这时M会进入spining状态(即将进入stop状态),不过处于spining状态的M不应该太多,因为这样CPU的利用率会很高,同时此时程序的并发性也不理想.
 所以这里会有一个限制:
 
-~~~ {prettyprint lang-c}
+~~~ 
 static G*
 findrunnable(void)
 {
@@ -220,7 +220,7 @@ findrunnable(void)
 
 **case 1: 如果有需要执行的G,且有空闲的P,但是没有处于spining状态的M:**
 
-~~~ {prettyprint lang-c}
+~~~ 
 static void
 schedule(void)
 {
@@ -252,7 +252,7 @@ starttheworld用于恢复暂停的M的执行.
 当所有M都处于stop状态之后,会根据需要并行gc的数量唤醒相同数量的M,并开始进行gc
 (注意,这里并没有去寻找P,而是直接执行runtime·gchelper).
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 runtime·helpgc(int32 nproc)
 {
@@ -292,7 +292,7 @@ M可以和G进行绑定,也是就说G只能在指定的M上执行.
 如果某个M被绑定到某个特定的G时,M在信号量(m->park)上等待,
 直到指定的G被调度.
 
-~~~ {prettyprint lang-c}
+~~~ 
 static void
 stoplockedm(void)
 {

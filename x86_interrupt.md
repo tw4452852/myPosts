@@ -34,7 +34,7 @@ x86 interrupt initialization | 2013-09-09
 
 IDT中每个条目的结构如下:
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct IDTDescr{
 	uint16_t offset_1; // offset bits 0..15
 	uint16_t selector; // a code segment selector in GDT or LDT
@@ -45,7 +45,7 @@ struct IDTDescr{
 ~~~
 `type_attr`:
 
-~~~ {prettyprint}
+~~~ 
 7                           0
 +---+---+---+---+---+---+---+---+
 | P |  DPL  | S |    GateType   |
@@ -82,7 +82,7 @@ cpu为我们已经做了哪些事,由于当中断结束时,需要返回到原来
 这里为了简化处理不同的情况,对于那些没有error code的中断,
 也会在stack伪造一个值(0).
 
-~~~ {prettyprint}
+~~~ 
 exception_handler_start:
 i = 0
 # intel reserve exception or fault
@@ -105,7 +105,7 @@ i = i + 1
 这里限定同时只能有2个中断可以被处理,
 这是由于在每个cpu存在2个中断队列(ISR,IRR,具体参见intel手册卷3 10.8.4)
 
-~~~ {prettyprint}
+~~~ 
 exception_handler:
 	cld
 	cmpl $2, %ss:recursion_flag
@@ -176,7 +176,7 @@ Local APIC其实是cpu芯片上的一个电路,主要有以下几个功能:
 初始情况下,所有的interrupt都是被禁用的,
 这里为了简单起见,只对local interrupt 0/1进行配置
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 lapic_init()
 {
@@ -196,7 +196,7 @@ lvt1接收不可屏蔽中断.
 告知中断控制器该中断已被cpu处理完成,
 这里主要是通过向local apic的EOI寄存器进行写操作完成.
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 apic_eoi(u32 irq)
 {
@@ -238,7 +238,7 @@ IRR状态 | 14 |
 
 - 如果主板上同时存在pic和io apic需要屏蔽所有的pic中断.
 
-~~~ {prettyprint lang-c}
+~~~ 
 static inline void
 disable_8259()
 {
@@ -249,7 +249,7 @@ disable_8259()
 
 - 在一些老板子上,需要显式的告诉pic将中断转到io apic上.
 
-~~~ {prettyprint lang-c}
+~~~ 
 static inline void
 switch_to_apic()
 {

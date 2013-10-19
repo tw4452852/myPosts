@@ -25,7 +25,7 @@ Sequential file | 2013-05-02
 
 首先是关键的数据结构:
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct seq_file {
 	char *buf;
 	size_t size;
@@ -46,13 +46,13 @@ struct seq_file {
 
 其中buf初始大小为PAGE_SIZE
 
-~~~ {prettyprint lang-c}
+~~~ 
 m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
 ~~~
 
 seq_operations定义如下:
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct seq_operations {
 	void * (*start) (struct seq_file *m, loff_t *pos);
 	void (*stop) (struct seq_file *m, void *v);
@@ -67,7 +67,7 @@ struct seq_operations {
 
 其中seq_file提供了show的方法，拿seq_printf为例：
 
-~~~ {prettyprint lang-c}
+~~~ 
 int seq_printf(struct seq_file *m, const char *f, ...)
 {
 	va_list args;
@@ -122,7 +122,7 @@ buffer中内容的大小，会尽可能填充kernel buffer。
 - 如果一次show写入的内容超过buf size怎么办？
 答案是重新申请一个更大的buf，再试一次。
 
-~~~ {prettyprint lang-c}
+~~~ 
 ...
 m->op->stop(m, p);
 kfree(m->buf);
@@ -140,7 +140,7 @@ p = m->op->start(m, &pos);
 那么如果read offset和seq_file中记录的offset（即read_pos字段）不一致怎么办？
 答案是从头开始，模拟一次读写过程，就好象之前已经读到该offset位置。
 
-~~~ {prettyprint lang-c}
+~~~ 
 ...
 p = m->op->start(m, &index);
 while (p) {

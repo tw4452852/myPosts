@@ -81,7 +81,7 @@ MM中指出,只有满足以下2个条件,一个对v的读操作(`r`)才**被允�
 
 让我们来看看下面这个错误的信号量的实现:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type broken chan bool
 func (ch broken) acquire() { ch <- true }
 func (ch broken) release() { <-ch }
@@ -94,7 +94,7 @@ func newSemaphore(count int) broken {
 
 为了便于理解,我们通过一个具体的资源管理的问题来阐述:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type semaphore interface { acquire(); release() }
 type work struct {
 	sem semaphore
@@ -139,7 +139,7 @@ func (w *work) execute() {
 
 幸运的是,对上述错误的信号量实现的修改是简单的:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type working chan bool
 func (ch working) acquire() { <-ch }
 func (ch working) release() { ch <- true }
@@ -175,7 +175,7 @@ func newSemaphore(count int) working {
 
 [1]: http://play.golang.org/p/FOFIDeR6EJ
 
-~~~ {prettyprint lang-go}
+~~~ 
 type FutureInt struct {
 	value int
 	ready chan struct{}
@@ -224,7 +224,7 @@ B处对`f.value`的读操作能够观察到A处对`f.value`的赋值.
 
 下面是一个错误的尝试快路延迟初始化的例子,该例子来自MM:
 
-~~~ {prettyprint lang-go}
+~~~ 
 var a string
 var done bool
 

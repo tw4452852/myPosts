@@ -9,7 +9,7 @@ channel在go中是非常有用的工具,但是在有些情景下,效果不是很
 
 下面是通常情况下的实现的API:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Broadcaster ...
 
 func NewBroadcaster() Broadcaster
@@ -25,7 +25,7 @@ func (b Broadcaster) Listen() chan interface{}
 每次调用`Listen`都会向其添加一个新的channel,
 核心主线程的处理逻辑可能看上去是下面这样的:
 
-~~~ {prettyprint lang-go}
+~~~ 
 for {
 	select {
 		case v := <-inc:
@@ -50,7 +50,7 @@ for {
 
 下面是该方案的核心部分:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type broadcast struct {
 	c	chan broadcast
 	v	interface{}
@@ -68,7 +68,7 @@ type broadcast struct {
 该迷惑的另一个方面来自使用buffer channel作为一对多广播的实体.
 如果我有一个类型为T的buffer channel:
 
-~~~ {prettyprint lang-go}
+~~~ 
 var c = make(chan T, 1)
 ~~~
 那么任何尝试读取该channel的线程都会被阻塞,直到有一个值被写入.
@@ -76,7 +76,7 @@ var c = make(chan T, 1)
 这个值只会被一个读线程接收到,但是如果所有读线程都遵循这样一个规则:
 每当从channel中读到一个值,都立即将其重新放回到channel中:
 
-~~~ {prettyprint lang-go}
+~~~ 
 func wait(c chan T) T {
 	v := <-c
 	c <- v
@@ -88,7 +88,7 @@ func wait(c chan T) T {
 
 下面是整个的代码:
 
-~~~ {prettyprint lang-go}
+~~~ 
 package broadcast
 
 type broadcast struct {
@@ -162,7 +162,7 @@ func (r *Receiver) Read() interface{} {
 
 下面是一个使用它的简单的示例代码:
 
-~~~ {prettyprint lang-go}
+~~~ 
 package main
 
 import (

@@ -24,7 +24,7 @@ A*happens-before* B的保证可能是你希望得到的.
 那么A*happens-before* B.这是我之前的一篇博客中提到的
 "内存排序的核心规则"中的基础.
 
-~~~ {prettyprint lang-c}
+~~~ 
 int A, B;
 
 void foo()
@@ -64,7 +64,7 @@ void foo()
 下面的代码执行了(1)对A的赋值,紧接着是(2)对B的赋值.
 根据程序顺序的规则,(1)*happens-before* (2)
 
-~~~ {prettyprint lang-c}
+~~~ 
 int A = 0;
 int B = 0;
 
@@ -100,7 +100,7 @@ void main()
 由于我们并行的操作共享变量,为了简单,我们假设所有对int类型的变量的操作都是原子的.
 根据程序的顺序,在(1)和(2)之间存在*happens-before* 关系,同时在(3)和(4)之间也存在.
 
-~~~ {prettyprint lang-c}
+~~~ 
 int isReady = 0;
 int answer = 0;
 

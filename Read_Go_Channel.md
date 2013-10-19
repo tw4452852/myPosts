@@ -14,7 +14,7 @@ Read Go - Channel | 2013-06-05
 无论channel的发送方还是接收方都可能互相等待对方,
 所以,理所当然有2个等待队列,一个用于发送方,一个用于接收方.
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	Hchan
 {
 	...
@@ -28,7 +28,7 @@ struct	Hchan
 对于buffer channel还必须有个buffer,
 这里的设计采用的是一个环形的ring,典型的生产者和消费者的模型.
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	Hchan
 {
 	uintgo	qcount;			// total data in the q
@@ -43,7 +43,7 @@ struct	Hchan
 这里有个需要主要的是,这个buffer是预先分配的,
 在内存中的分布是紧跟着channel描述符(struct Hchan)之后的.
 
-~~~ {prettyprint lang-c}
+~~~ 
 // Buffer follows Hchan immediately in memory.
 // chanbuf(c, i) is pointer to the i'th slot in the buffer.
 #define chanbuf(c, i) ((byte*)((c)+1)+(uintptr)(c)->elemsize*(i))
@@ -143,7 +143,7 @@ select可以看做对一组channel的send/receive,
 这里需要考虑随即性,
 这里采用的是伪随即的方式将之前的先后顺序随即打乱.
 
-~~~ {prettyprint lang-c}
+~~~ 
 static void*
 selectgo(Select **selp)
 {
@@ -169,7 +169,7 @@ selectgo(Select **selp)
 之后按照经过排序的顺序依次进行lock/unlock,
 所以虚拟地址小的channel会先被锁住.
 
-~~~ {prettyprint lang-c}
+~~~ 
 static void*
 selectgo(Select **selp)
 {

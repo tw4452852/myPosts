@@ -19,7 +19,7 @@ groupcache可以说是[memcached](http://en.wikipedia.org/wiki/Memcached)的替�
 `ByteView`实现了一个只读的`[]byte`,
 其中内部的数据既可以是`string`也可以是`[]byte`, 从它的数据结构就可以看出:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type ByteView struct {
 	b []byte
 	s string
@@ -44,7 +44,7 @@ Len, ByteSlice, String, At, Slice, SliceFrom, Copy, Equal, EqualBytes, EqualStri
 
 `Sink`其实是个`interface`:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Sink interface {
 	// SetString sets the value to s.
 	SetString(s string) error
@@ -76,7 +76,7 @@ type Sink interface {
 
 LRU cache作为其内部的cache表现形式,先来看数据结构:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Cache struct {
 	// MaxEntries is the maximum number of cache entries before
 	// an item is evicted. Zero means no limit.
@@ -104,7 +104,7 @@ type Cache struct {
 
 `HTTPPool`主要是抽象1-N的映射关系,数据结构如下:
 
-~~~ {prettyprint lang-go}
+~~~ 
 // HTTPPool implements PeerPicker for a pool of HTTP peers.
 type HTTPPool struct {
 	// Context optionally specifies a context for the server to use when it
@@ -131,7 +131,7 @@ type HTTPPool struct {
 那么选取对端节点呢,这里使用的是将用于查询的key的crc作为数组的index,
 从peers中选出一个:
 
-~~~ {prettyprint lang-go}
+~~~ 
 func (p *HTTPPool) PickPeer(key string) (ProtoGetter, bool) {
 	// TODO: make checksum implementation pluggable
 	h := crc32.Checksum([]byte(key), crc32.IEEETable)
@@ -165,7 +165,7 @@ HTTPPool还有一个功能,就是响应查询的请求,
 `Group`抽象出一个namespace,其中包括相关的数据
 以及存储该数据的一台或多台机器.
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Group struct {
 	name       string
 	getter     Getter
@@ -198,7 +198,7 @@ type Group struct {
 
 - 第2步中,说的是可能,具体可以从代码中看出:
 
-~~~ {prettyprint lang-go}
+~~~ 
 
 func (g *Group) getFromPeer(ctx Context, peer ProtoGetter, key string) (ByteView, error) {
 	...
