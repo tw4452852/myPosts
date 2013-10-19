@@ -1,5 +1,4 @@
 [zz] The Go netpoller | 2013-09-12
-# The Go netpoller
 
 [原文在此](http://morsmachine.dk/netpoller)
 

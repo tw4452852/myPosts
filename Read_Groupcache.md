@@ -1,5 +1,4 @@
 Read Groupcache | 2013-08-02
-# Read Groupcache
 
 groupcache可以说是[memcached](http://en.wikipedia.org/wiki/Memcached)的替代品.
 

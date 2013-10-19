@@ -1,5 +1,4 @@
 Read Go - Split Stack | 2013-05-08
-# Read Go - Split Stack
 
 如果大家对split stack还不是很清楚,
 这里有一篇[介绍文档](http://gcc.gnu.org/wiki/SplitStacks).

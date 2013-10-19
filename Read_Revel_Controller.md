@@ -1,5 +1,4 @@
 Read Revel - Controller | 2012-12-10
-# Read Revel - Controller
 
 The Revel makes it easy to build web applications using the Model-View-Controller(MVC) pattern by
 relying on conventions that require a certain structure in your application.

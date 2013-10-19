@@ -1,5 +1,4 @@
 Sequential file | 2013-05-02
-# Sequential file
 
 今天在调试driver时，当查看一个proc文件时，碰到一个问题，
 之后发现是因为现实内容查过了4Kb（也就是一个page的大小），

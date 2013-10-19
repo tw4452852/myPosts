@@ -1,5 +1,4 @@
 [zz] The Happens-Before Relation | 2013-07-04
-# The Happens-Before Relation
 
 [原文在此](http://preshing.com/20130702/the-happens-before-relation)
 

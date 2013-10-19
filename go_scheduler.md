@@ -1,5 +1,4 @@
 [zz] The Go scheduler | 2013-09-04
-# The Go schedule
 
 [原文在此](http://morsmachine.dk/go-scheduler)
 

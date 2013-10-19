@@ -1,5 +1,4 @@
 x86 interrupt initialization | 2013-09-09
-# x86 interrupt initialization
 
 这几天在bochs上动手实践了一下中断初始化,
 和之前使用PIC不同,这次使用的APIC,

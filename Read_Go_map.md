@@ -1,5 +1,4 @@
 Read Go - Map | 2013-04-18
-# Read Go - Map
 
 这篇文章主要介绍Go中Map的相关内容，主要包括以下几部分：
 

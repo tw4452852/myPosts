@@ -1,7 +1,5 @@
 [译] Understanding the Go Memory Model | 2013-05-30
 
-# [译] Understanding the Go Memory Model
-
 [原文在此](https://docs.google.com/document/d/163LwGViH_RSv5YEHmwixBJEjOOi3LYJbMhKY7sq3z1Q/edit?usp=sharing)
 
 官方的[Go Memory Model](golang.org/ref/mm)(以下简称MM)
