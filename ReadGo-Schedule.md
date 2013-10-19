@@ -15,7 +15,7 @@ Read Go - Schedule | 2013-05-21
 
 ## M (worker thread or machine)
 
----
+
 
 这其实就是os thread在go中的抽象,
 既然是os thread,那么它的创建想必是通过clone系统调用,的确是这样:
@@ -71,7 +71,7 @@ mcommoninit(M *mp)
 
 ## G (goroutine)
 
----
+
 
 首先是g的申请,策略是这样的:
 
@@ -147,7 +147,7 @@ M默认情况下处于start状态,不过M也有可能被调度器设置成stop�
 
 ## P (processor)
 
----
+
 
 P的概念有点像进程环境,它表示程序运行所需的所有的资源,
 那么程序运行所需的资源是什么呢？
@@ -174,7 +174,7 @@ P的概念有点像进程环境,它表示程序运行所需的所有的资源,
 
 ## schedule
 
----
+
 
 清楚了M,G,P这三个抽象概念,下面我们来看下执行调度时,是如何将三者联系起来,共同完成调度的.
 
@@ -214,7 +214,7 @@ findrunnable(void)
 
 ### Corner Cases
 
----
+
 
 下面我们看下在schedule过程可能出现的corner cases:
 

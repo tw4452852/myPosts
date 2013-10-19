@@ -7,7 +7,7 @@ Read Go - Split Stack | 2013-05-08
 
 ## Strategy
 
----
+
 
 一般来说,在每次函数调用之前,都应该检查当前的堆栈指针(SP)是否已经达到或者超过限制的大小(`g->stackguard`),
 如果没有,则仍然在当前的stack上完成函数调用,
@@ -47,7 +47,7 @@ else
 
 ## Prepare
 
----
+
 
 我们知道stack就是函数的运行环境(上下文),
 而现在需要在新的stack上继续函数调用,
@@ -103,7 +103,7 @@ struct	M
 
 ## Allocation
 
----
+
 
 保存好当前的上下文信息,下面就是申请新的stack,这里有2点需要注意下:
 
@@ -166,7 +166,7 @@ runtime·newstack(void)
 
 ## Switch
 
----
+
 
 有了新的已经初始化好的stack,下面就是准备stack switch:
 
@@ -230,7 +230,7 @@ runtime·newstack(void)
 
 ## Conclusion
 
----
+
 
 最后,我们来看下整个stack的变化:
 

@@ -5,11 +5,11 @@ go的内存管理主要是借鉴了[tcmalloc](http://goog-perftools.sourceforge.
 
 ## Init
 
----
+
 
 ### Create rules
 
----
+
 
 由于go的内存管理是以page为单位的，所以当分配比较小的内存时，
 需要按page向上对齐进行分配。
@@ -56,7 +56,7 @@ class | maxSize | allocNPages | transfercount
 
 ### Alloc all we want
 
----
+
 
 go首先在堆上申请足够大小的连续的虚拟地址空间(arena)，同时建立一个bitmap使得每个虚拟地址都有与之对应的4bit的元信息。
 针对32/64位系统会申请不同大小的arena和bitmap：
@@ -93,7 +93,7 @@ bits = *b >> shift;
 
 ## Allocators
 
----
+
 
 在go中主要有3种memory allocator：
 
@@ -103,7 +103,7 @@ bits = *b >> shift;
 
 ### FixAlloc
 
----
+
 
 FixAlloc的实现主要是一个free-list，每次会向系统申请FixAllocChunk（128Kb）的内存，然后在该chunk上分割成一个个制定大小的object。主要的数据结构如下：
 
@@ -134,7 +134,7 @@ struct FixAlloc
 
 ### mcache
 
----
+
 
 mcache代表每个pthread本地的小内存cache。
 对于小内存的申请，步骤如下：
@@ -173,7 +173,7 @@ mcache代表每个pthread本地的小内存cache。
 
 ### mheap
 
----
+
 
 对于大内存的申请和释放（大于32K）是直接在heap上按page进行的。
 其中主要的概念为span和mheap。

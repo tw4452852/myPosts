@@ -9,7 +9,7 @@ Read Go - Channel | 2013-06-05
 
 ## Essential data structure
 
----
+
 
 无论channel的发送方还是接收方都可能互相等待对方,
 所以,理所当然有2个等待队列,一个用于发送方,一个用于接收方.
@@ -64,7 +64,7 @@ runtime·makechan_c(ChanType *t, int64 hint)
 
 ## sync/async send and receive
 
----
+
 
 知道了基本的数据结构,下面我们来看下数据收发的基本流程.
 由于发送和接收有可能导致当前的G进入sleep状态,
@@ -77,7 +77,7 @@ runtime·makechan_c(ChanType *t, int64 hint)
 
 ### send
 
----
+
 
 **case 1: send on nil channel**
 
@@ -104,7 +104,7 @@ runtime·makechan_c(ChanType *t, int64 hint)
 
 ### receive
 
----
+
 
 **case 1: receive on nil channel**
 
@@ -127,7 +127,7 @@ runtime·makechan_c(ChanType *t, int64 hint)
 
 ## select
 
----
+
 
 select可以看做对一组channel的send/receive,
 和一个channel的receive/send不同的是,

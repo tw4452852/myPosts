@@ -21,7 +21,7 @@ Sequential file | 2013-05-02
 
 ## Essential
 
----
+
 
 首先是关键的数据结构:
 
@@ -92,7 +92,7 @@ int seq_printf(struct seq_file *m, const char *f, ...)
 
 ## Normal case
 
----
+
 
 首先看看一般正常情形下的处理逻辑：
 
@@ -115,7 +115,7 @@ buffer中内容的大小，会尽可能填充kernel buffer。
 
 ## Corner case
 
----
+
 
 下面来看2个异常的case
 
@@ -179,7 +179,7 @@ m->index = index;
 
 ## Conclusion
 
----
+
 
 进过上述的分析，给出一个经过修改的逻辑图：
 

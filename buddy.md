@@ -1,7 +1,7 @@
 [zz] A buddy system implement | 2013-10-11
 # [zz] A buddy system implement
 
----
+
 
 [原文在此](http://coolshell.cn/articles/10427.html)
 

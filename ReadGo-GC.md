@@ -7,7 +7,7 @@ Read Go - GC | 2013-04-08
 
 ## 触发条件
 
----
+
 
 gc的触发条件是由一个环境变量GOGC去控制的，
 该变量的取值有如下2种：
@@ -20,7 +20,7 @@ gc的触发条件是由一个环境变量GOGC去控制的，
 
 ## Mark-and-Sweep
 
----
+
 
 go的gc用的是[Mark-and-Sweep](http://www.brpreiss.com/books/opus5/html/page424.html)算法，
 根据算法的要求，在gc的时候，其他的程序必须暂停，等gc执行完成再重新恢复暂停的程序，
@@ -35,11 +35,11 @@ go的gc用的是[Mark-and-Sweep](http://www.brpreiss.com/books/opus5/html/page42
 
 ### Mark
 
----
+
 
 #### preparation
 
----
+
 
 在mark之前有一件事必须先准备好，那就是我们需要mark的object（也就是算法中所谓的root），
 当准备好所需要mark的root之后，它会依次遍历每个以root为根的树,最终完成mark过程。
@@ -68,7 +68,7 @@ type的类型有如下几种：
 
 #### The simple way
 
----
+
 
 清楚了我们该mark哪些内容，开始mark吧，其中比较直接的方法是采用递归的办法依次遍历每颗树。
 
@@ -78,7 +78,7 @@ type的类型有如下几种：
 
 #### The complex way
 
----
+
 
 可以明显的看出，如果递归的层数太深，上述的方法效率比较低，
 为了提高效率，go采用了另外一种并行的多线程的方案。
@@ -131,7 +131,7 @@ stack中,供其他线程来取，
 
 #### What are they
 
----
+
 
 现在我们已经有了object了，那么这些object到底是什么类型的呢？chan？map？array？或者只是一个void*?
 下一步我们必须知道这些object具体的类型。
@@ -162,7 +162,7 @@ OK, mark过程就说到这。
 
 ### Sweep
 
----
+
 
 经过了mark，sweep过程就比较简单了：遍历所有的span，依次扫描它包含的object，
 如果发现该object被mark了，clear该标记，为下一次的mark做准备;
@@ -173,7 +173,7 @@ OK, mark过程就说到这。
 
 ## Conclusion
 
----
+
 
 这样整个的mark-and-sweep过程就完成，这其中有一些细节没有涉及：
 

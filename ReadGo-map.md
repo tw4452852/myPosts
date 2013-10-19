@@ -9,7 +9,7 @@ Read Go - Map | 2013-04-18
 
 ## Implementation of Map
 
----
+
 
 在go中，map是用hash table来实现的，其中每个bucket中存放最多8个key/value pair,
 如果多于8个，那么会申请一个新的bucket，并将其与之前的bucket链起来。
@@ -137,7 +137,7 @@ if((h->flags & IndirectValue) != 0) {
 
 ## Map Interation
 
----
+
 
 Map Interation的实现比较简单，有个原则就是如果同时存在old和new table，
 优先遍历old table中那些没有evacuated的buckets。
@@ -147,7 +147,7 @@ Map Interation的实现比较简单，有个原则就是如果同时存在old和
 
 ## GC Interation
 
----
+
 
 gc的Interation核心是一个状态机：
 

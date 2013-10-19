@@ -14,7 +14,7 @@ groupcache可以说是[memcached](http://en.wikipedia.org/wiki/Memcached)的替�
 
 ## ByteView
 
----
+
 
 `ByteView`实现了一个只读的`[]byte`,
 其中内部的数据既可以是`string`也可以是`[]byte`, 从它的数据结构就可以看出:
@@ -36,7 +36,7 @@ Len, ByteSlice, String, At, Slice, SliceFrom, Copy, Equal, EqualBytes, EqualStri
 
 ## Sink
 
----
+
 
 `Sink`抽象出一个数据存储容器,
 无论该数据的形式是`string`、`[]byte`还是
@@ -72,7 +72,7 @@ type Sink interface {
 
 ## LRU cache
 
----
+
 
 LRU cache作为其内部的cache表现形式,先来看数据结构:
 
@@ -100,7 +100,7 @@ type Cache struct {
 
 ## HTTPPool
 
----
+
 
 `HTTPPool`主要是抽象1-N的映射关系,数据结构如下:
 
@@ -160,7 +160,7 @@ HTTPPool还有一个功能,就是响应查询的请求,
 
 ## Group
 
----
+
 
 `Group`抽象出一个namespace,其中包括相关的数据
 以及存储该数据的一台或多台机器.

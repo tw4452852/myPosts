@@ -12,7 +12,7 @@ x86 interrupt initialization | 2013-09-09
 
 ## IDT
 
----
+
 
 对于intel的cpu,有一个称为IDT的表用于处理中断,
 其中,对于x86的cpu的共有256表项(0-255).
@@ -137,7 +137,7 @@ hlt_loop:
 
 ## APIC
 
----
+
 
 首先来看下多核架构下APIC的整体结构:
 
@@ -151,7 +151,7 @@ hlt_loop:
 
 ### Local APIC
 
----
+
 
 Local APIC其实是cpu芯片上的一个电路,主要有以下几个功能:
 
@@ -207,7 +207,7 @@ apic_eoi(u32 irq)
 
 ### IO APIC
 
----
+
 
 io apic不同于local apic,它是单独的一个芯片,
 和每个local apic相连,这样它便可以将中断转发给各个processor.

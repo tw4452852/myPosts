@@ -10,7 +10,7 @@ Read Go - Sync | 2013-06-06
 
 ## semaphore
 
----
+
 
 上述的概念的实现都基于runtime提供的semaphore机制,
 简单的说,就是基本的睡眠和唤醒机制.
@@ -41,7 +41,7 @@ release的操作首先是释放资源的使用权(`semaphore++`),
 
 ## mutex
 
----
+
 
 有了runtime提供的基本的睡眠和唤醒机制,
 下面我们在其基础上实现mutex的功能.
@@ -91,7 +91,7 @@ type Mutex struct {
 
 ## once
 
----
+
 
 once的结构比较简单:
 
@@ -107,7 +107,7 @@ type Once struct {
 
 ## rwlock
 
----
+
 
 先来看数据结构:
 
@@ -144,7 +144,7 @@ type RWMutex struct {
 
 ## condition
 
----
+
 
 对condition的操作有3个:
 
@@ -240,7 +240,7 @@ func (c *Cond) Signal() {
 
 ## WaitGroup
 
----
+
 
 WaitGroup的数据结构如下:
 

@@ -1,7 +1,7 @@
 Channel As Semaphore | 2013-03-07
 # Channel As Semaphore
 
----
+
 
 今天看到golang-dev一个关于将channel用于semaphore的讨论(附[链接](https://groups.google.com/d/topic/golang-dev/ShqsqvCzkWg/discussion)).
 通常的方法如下：

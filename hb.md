@@ -57,7 +57,7 @@ void foo()
 
 ## Happens-Before并不意味着Happening Before
 
----
+
 
 这里有个例子,其中的操作具有*happens-before* 关系,
 但是实际上并不是按照那个顺序发生的.
@@ -93,7 +93,7 @@ void main()
 
 ## Happening Before并不意味着Happens-Before
 
----
+
 
 这个例子中,所有的操作按照制定的顺序发生,但是并不构成*happens-before* 关系.
 在下面的代码中,假设一个线程调用`pulishMessage`,同时,另一个线程调用`consumeMessage`.
