@@ -1,0 +1,29 @@
+Hello Present
+23:23 20 Oct 2013
+
+* Section test
+
+test
+
+** Subsection test
+
+- test bullets
+- test more bullets
+- test a bullet with
+
+*** test Sub-subsection
+
+Test some More text
+
+  Preformatted text
+  is indented (however you like)
+
+Further Text, including invocations like:
+
+.code ./x.go /^func main/,/^}/
+.play x.go
+.image /images/Hello_Present/gopher.png
+.link http://github.com/tw4452852 github
+.html ./file.html
+
+Again, test more text
