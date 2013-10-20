@@ -161,6 +161,6 @@ runtime使用调用系统调用的goroutine,而将线程保留了下来.
 在go runtime库中有足够多的有趣的设计等待我们去发现.
 
 PS:
-自己写关于schedule代码的理解见[这篇文章](/posts/f34f122d64cc66a3f719ed51ad2650a9)
+自己写关于schedule代码的理解见[这篇文章](/posts/Read_Go_-_Schedule)
 
 [design_doc]: https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw
