@@ -1,12 +1,11 @@
 Read Revel - Config | 2012-12-18
-# Read Revel - Config
 
 The application config file is named app.conf and uses the syntax accepted by
 [goconfig](https://github.com/robfig/goconfig), which is similar to Microsoft INI files.
 
 Here's an example file:
 
-~~~ {prettyprint}
+~~~ 
 app.name=chat
 app.secret=pJLzyoiDe17L36mytqC912j81PfTiolHm1veQK6Grn1En3YFdB5lvEHVTwFEaWvj
 http.addr=
@@ -61,7 +60,7 @@ a line, including on the same line after parameters or section declarations.
 
 For example:
 
-~~~ {prettyprint}
+~~~ 
 [My Section]
 foodir: %(dir)s/whatever
 dir=foo
@@ -72,7 +71,7 @@ are done on demand.
 ### Data structure
 `Config` is the representation of configuration settings.
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Config struct {
 	comment   string
 	separator string
@@ -91,7 +90,7 @@ type Config struct {
 
 `tValue` hold the input position for a value.
 
-~~~ {prettyprint lang-go}
+~~~ 
 type tValue struct {
 	position int    // Option order
 	v        string // value
@@ -110,7 +109,7 @@ The `Config` supports four method for managing section.
 
 This method is used to add a new section to the configuration.
 
-~~~ {prettyprint lang-go}
+~~~ 
 // AddSection adds a new section to the configuration.
 //
 // If the section is nil then uses the section by default which it's already
@@ -143,7 +142,7 @@ func (self *Config) AddSection(section string) bool {
 
 This method is used to remove a section from the configuration.
 
-~~~ {prettyprint lang-go}
+~~~ 
 // RemoveSection removes a section from the configuration.
 // It returns true if the section was removed, and false if section did not exist.
 func (self *Config) RemoveSection(section string) bool {
@@ -171,7 +170,7 @@ func (self *Config) RemoveSection(section string) bool {
 
 This method is used to check the specified section is exist in the configuration.
 
-~~~ {prettyprint lang-go}
+~~~ 
 // HasSection checks if the configuration has the given section.
 // (The default section always exists.)
 func (self *Config) HasSection(section string) bool {
@@ -185,7 +184,7 @@ func (self *Config) HasSection(section string) bool {
 
 This method is to get all the existing sections' names.
 
-~~~ {prettyprint lang-go}
+~~~ 
 // Sections returns the list of sections in the configuration.
 // (The default section always exists.)
 func (self *Config) Sections() (sections []string) {
@@ -229,7 +228,7 @@ local file.
 
 Revel wrap the `goconfig` in its own structure, named `MergedConfig`
 
-~~~ {prettyprint lang-go}
+~~~ 
 // It has a "preferred" section that is checked first for option queries.
 // If the preferred section does not have the option, the DEFAULT section is
 // checked fallback.
@@ -245,7 +244,7 @@ The wrapped methods handle all the errors in searching, and reported it by the b
 One special method is `MergedConfig`'s Options, it accepts a filter prefix string. The results from
 the config.Options will be filtered.
 
-~~~ {prettyprint lang-go}
+~~~ 
 // Options returns all configuration option keys.
 // If a prefix is provided, then that is applied as a filter.
 func (c *MergedConfig) Options(prefix string) []string {

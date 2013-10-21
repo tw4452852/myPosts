@@ -1,5 +1,4 @@
 [zz] The Happens-Before Relation | 2013-07-04
-# The Happens-Before Relation
 
 [原文在此](http://preshing.com/20130702/the-happens-before-relation)
 
@@ -24,7 +23,7 @@ A*happens-before* B的保证可能是你希望得到的.
 那么A*happens-before* B.这是我之前的一篇博客中提到的
 "内存排序的核心规则"中的基础.
 
-~~~ {prettyprint lang-c}
+~~~ 
 int A, B;
 
 void foo()
@@ -57,14 +56,14 @@ void foo()
 
 ## Happens-Before并不意味着Happening Before
 
----
+
 
 这里有个例子,其中的操作具有*happens-before* 关系,
 但是实际上并不是按照那个顺序发生的.
 下面的代码执行了(1)对A的赋值,紧接着是(2)对B的赋值.
 根据程序顺序的规则,(1)*happens-before* (2)
 
-~~~ {prettyprint lang-c}
+~~~ 
 int A = 0;
 int B = 0;
 
@@ -93,14 +92,14 @@ void main()
 
 ## Happening Before并不意味着Happens-Before
 
----
+
 
 这个例子中,所有的操作按照制定的顺序发生,但是并不构成*happens-before* 关系.
 在下面的代码中,假设一个线程调用`pulishMessage`,同时,另一个线程调用`consumeMessage`.
 由于我们并行的操作共享变量,为了简单,我们假设所有对int类型的变量的操作都是原子的.
 根据程序的顺序,在(1)和(2)之间存在*happens-before* 关系,同时在(3)和(4)之间也存在.
 
-~~~ {prettyprint lang-c}
+~~~ 
 int isReady = 0;
 int answer = 0;
 

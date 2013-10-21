@@ -1,22 +1,21 @@
 Read Go - Memory | 2013-03-27
-# Read Go - Memory
 这篇主要介绍go源码的内存管理的部分。
 go的内存管理主要是借鉴了[tcmalloc](http://goog-perftools.sourceforge.net/doc/tcmalloc.html)。
 
 ## Init
 
----
+
 
 ### Create rules
 
----
+
 
 由于go的内存管理是以page为单位的，所以当分配比较小的内存时，
 需要按page向上对齐进行分配。
 为了在分配小内存时，能够直接得到与申请大小相匹配的page的个数，
 go在最开始的地方，首先初始化了3张表：
 
-~~~ {prettyprint lang-c}
+~~~ 
 int32 runtime·class_to_size[NumSizeClasses];
 int32 runtime·class_to_allocnpages[NumSizeClasses];
 int32 runtime·class_to_transfercount[NumSizeClasses];
@@ -56,7 +55,7 @@ class | maxSize | allocNPages | transfercount
 
 ### Alloc all we want
 
----
+
 
 go首先在堆上申请足够大小的连续的虚拟地址空间(arena)，同时建立一个bitmap使得每个虚拟地址都有与之对应的4bit的元信息。
 针对32/64位系统会申请不同大小的arena和bitmap：
@@ -83,7 +82,7 @@ go首先在堆上申请足够大小的连续的虚拟地址空间(arena)，同�
 由于bitmap是从`arena_start`想低地址不断增长的。
 所以如果给定一个指针p，我们就可以通过下面的转换关系得到其对应的bits：
 
-~~~ {prettyprint lang-go}
+~~~ 
 off = p - (uintptr*)mheap.arena_start;
 b = (uintptr*)mheap.arena_start - off/wordsPerBitmapWord - 1;
 shift = off % wordsPerBitmapWord
@@ -93,7 +92,7 @@ bits = *b >> shift;
 
 ## Allocators
 
----
+
 
 在go中主要有3种memory allocator：
 
@@ -103,11 +102,11 @@ bits = *b >> shift;
 
 ### FixAlloc
 
----
+
 
 FixAlloc的实现主要是一个free-list，每次会向系统申请FixAllocChunk（128Kb）的内存，然后在该chunk上分割成一个个制定大小的object。主要的数据结构如下：
 
-~~~ {prettyprint lang-go}
+~~~ 
 struct FixAlloc
 {
 	uintptr size;
@@ -134,7 +133,7 @@ struct FixAlloc
 
 ### mcache
 
----
+
 
 mcache代表每个pthread本地的小内存cache。
 对于小内存的申请，步骤如下：
@@ -173,7 +172,7 @@ mcache代表每个pthread本地的小内存cache。
 
 ### mheap
 
----
+
 
 对于大内存的申请和释放（大于32K）是直接在heap上按page进行的。
 其中主要的概念为span和mheap。

@@ -1,5 +1,4 @@
 Read Go - Sync | 2013-06-06
-# Read Go - Sync
 
 今天来说说Go中提供一些同步方法,主要有大家都熟悉的:
 - mutex
@@ -10,7 +9,7 @@ Read Go - Sync | 2013-06-06
 
 ## semaphore
 
----
+
 
 上述的概念的实现都基于runtime提供的semaphore机制,
 简单的说,就是基本的睡眠和唤醒机制.
@@ -41,7 +40,7 @@ release的操作首先是释放资源的使用权(`semaphore++`),
 
 ## mutex
 
----
+
 
 有了runtime提供的基本的睡眠和唤醒机制,
 下面我们在其基础上实现mutex的功能.
@@ -55,7 +54,7 @@ release的操作首先是释放资源的使用权(`semaphore++`),
 
 下面来看下mutex的具体实现,首先是数据结构:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Mutex struct {
 	state int32
 	sema  uint32
@@ -91,11 +90,11 @@ type Mutex struct {
 
 ## once
 
----
+
 
 once的结构比较简单:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Once struct {
 	m    Mutex
 	done uint32
@@ -107,11 +106,11 @@ type Once struct {
 
 ## rwlock
 
----
+
 
 先来看数据结构:
 
-~~~ {prettyprint lang-go}
+~~~ 
 // An RWMutex is a reader/writer mutual exclusion lock.
 // The lock can be held by an arbitrary number of readers
 // or a single writer.
@@ -144,7 +143,7 @@ type RWMutex struct {
 
 ## condition
 
----
+
 
 对condition的操作有3个:
 
@@ -154,7 +153,7 @@ type RWMutex struct {
 
 在condition数据结构,有几个很有意思的字段:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type Cond struct {
 	L Locker // held while observing or changing the condition
 	m Mutex  // held to avoid internal races
@@ -220,7 +219,7 @@ goroutine 1被执行,获得内部的锁m,
 而`cv.signal`都是`release oldSema`,
 不过在release之前都会更新semaphore:
 
-~~~ {prettyprint lang-go}
+~~~ 
 func (c *Cond) Signal() {
 	...
 	c.m.Lock()
@@ -240,11 +239,11 @@ func (c *Cond) Signal() {
 
 ## WaitGroup
 
----
+
 
 WaitGroup的数据结构如下:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type WaitGroup struct {
 	m       Mutex
 	counter int32
@@ -256,7 +255,7 @@ type WaitGroup struct {
 防止多goroutines并行的情形下,对同一个semaphore的操作会相互影响.
 引用代码中一段注释:
 
-~~~ {prettyprint lang-go}
+~~~ 
 // WaitGroup creates a new semaphore each time the old semaphore
 // is released. This is to avoid the following race:
 //

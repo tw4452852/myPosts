@@ -1,5 +1,4 @@
 Read Go - Split Stack | 2013-05-08
-# Read Go - Split Stack
 
 如果大家对split stack还不是很清楚,
 这里有一篇[介绍文档](http://gcc.gnu.org/wiki/SplitStacks).
@@ -7,7 +6,7 @@ Read Go - Split Stack | 2013-05-08
 
 ## Strategy
 
----
+
 
 一般来说,在每次函数调用之前,都应该检查当前的堆栈指针(SP)是否已经达到或者超过限制的大小(`g->stackguard`),
 如果没有,则仍然在当前的stack上完成函数调用,
@@ -23,7 +22,7 @@ Read Go - Split Stack | 2013-05-08
 
 - `frame size <= StackSmall`:
 
-~~~ {prettyprint}
+~~~ 
 if SP <= g->stackguard
 	申请新的stack, 并在其上完成函数调用
 else
@@ -32,7 +31,7 @@ else
 
 - `StackSmall < frame size < StackBig`:
 
-~~~ {prettyprint}
+~~~ 
 if SP+(frame size - StackSmall) <= g->stackguard
 	申请新的stack, 并在其上完成函数调用
 else
@@ -41,13 +40,13 @@ else
 
 - `frame size >= StackBig`:
 
-~~~ {prettyprint}
+~~~ 
 申请新的stack, 并在其上完成函数调用
 ~~~
 
 ## Prepare
 
----
+
 
 我们知道stack就是函数的运行环境(上下文),
 而现在需要在新的stack上继续函数调用,
@@ -55,7 +54,7 @@ else
 如果你看过kernel中关于进程切换的代码,那就不难回答这个问题.
 这里需要保存当前上下文环境:
 
-~~~ {prettyprint}
+~~~ 
 TEXT runtime·morestack(SB),7,$0
 ...
 MOVQ	8(SP), AX	// f's caller's PC
@@ -71,7 +70,7 @@ MOVQ	SI, (m_morebuf+gobuf_g)(BX)
 
 可以看出保存的信息包括PC,SP,g,而这些信息都存放在`m->morebuf`中,
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	M
 {
 	...
@@ -89,7 +88,7 @@ struct	Gobuf
 除了保存之前的上下文信息,当前的函数调用信息也被保存下来,
 包括pc,arguments,argument size, frame size,分别对应`struct M`中的如下字段:
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	M
 {
 	...
@@ -103,7 +102,7 @@ struct	M
 
 ## Allocation
 
----
+
 
 保存好当前的上下文信息,下面就是申请新的stack,这里有2点需要注意下:
 
@@ -112,7 +111,7 @@ struct	M
 然后才进行新的stack的申请.
 2. 新的stack是在heap上申请的,同时这些空间不受GC的管理:
 
-~~~ {prettyprint lang-c}
+~~~ 
 void*
 runtime·stackalloc(uint32 n)
 {
@@ -132,7 +131,7 @@ runtime·stackalloc(uint32 n)
 有了新的stack空间,下面需要对其进行必要的初始化,
 所有的初始化信息都保存在栈顶,一个叫`Stktop`的结构体中:
 
-~~~ {prettyprint lang-c}
+~~~ 
 struct	Stktop
 {
 	// The offsets of these fields are known to (hard-coded in) libmach.
@@ -148,7 +147,7 @@ struct	Stktop
 ~~~
 可以看出,这里保存着原来的stack信息,以及当前的函数调用的信息.
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 runtime·newstack(void)
 {
@@ -166,11 +165,11 @@ runtime·newstack(void)
 
 ## Switch
 
----
+
 
 有了新的已经初始化好的stack,下面就是准备stack switch:
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 runtime·newstack(void)
 {
@@ -184,7 +183,7 @@ runtime·newstack(void)
 
 最后,进行真正的跳转:
 
-~~~ {prettyprint}
+~~~ 
 TEXT runtime·gogocall(SB), 7, $0
 	MOVQ	24(SP), DX	// context
 	MOVQ	16(SP), AX		// fn
@@ -208,7 +207,7 @@ TEXT runtime·gogocall(SB), 7, $0
 
 这个返回被设定为`runtime·lessstack`:
 
-~~~ {prettyprint lang-c}
+~~~ 
 void
 runtime·newstack(void)
 {
@@ -230,7 +229,7 @@ runtime·newstack(void)
 
 ## Conclusion
 
----
+
 
 最后,我们来看下整个stack的变化:
 

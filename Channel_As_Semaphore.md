@@ -1,12 +1,9 @@
 Channel As Semaphore | 2013-03-07
-# Channel As Semaphore
-
----
 
 今天看到golang-dev一个关于将channel用于semaphore的讨论(附[链接](https://groups.google.com/d/topic/golang-dev/ShqsqvCzkWg/discussion)).
 通常的方法如下：
 
-~~~ {prettyprint lang-go}
+~~~ 
 
 package main
 
@@ -62,7 +59,7 @@ model）中对channel操作的相关规则：
 
 但是，Russ Cox大牛还是有办法的，来看一下他的方法，还是使用上面的代码：
 
-~~~ {prettyprint lang-go}
+~~~ 
 
 package main
 

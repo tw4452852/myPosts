@@ -1,7 +1,5 @@
 [译] Understanding the Go Memory Model | 2013-05-30
 
-# [译] Understanding the Go Memory Model
-
 [原文在此](https://docs.google.com/document/d/163LwGViH_RSv5YEHmwixBJEjOOi3LYJbMhKY7sq3z1Q/edit?usp=sharing)
 
 官方的[Go Memory Model](golang.org/ref/mm)(以下简称MM)
@@ -12,7 +10,7 @@
 
 ## 之前发生
 
----
+
 
 当阅读内存模型这篇文档,有一个核心概念,那就是"之前发生",
 同时也是推导出正确理论的基础.
@@ -42,7 +40,7 @@
 
 ## 写观察
 
----
+
 
 当存在一个全局共享数据,任何正确的形式推导都基于一个前提:对其的读操作能观察到对其的写操作所造成的改变.
 但是正如墙上的时钟表现的那样,虽然秒针的移动在我们看时间之前发生,
@@ -81,7 +79,7 @@ MM中指出,只有满足以下2个条件,一个对v的读操作(`r`)才**被允�
 
 让我们来看看下面这个错误的信号量的实现:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type broken chan bool
 func (ch broken) acquire() { ch <- true }
 func (ch broken) release() { <-ch }
@@ -94,7 +92,7 @@ func newSemaphore(count int) broken {
 
 为了便于理解,我们通过一个具体的资源管理的问题来阐述:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type semaphore interface { acquire(); release() }
 type work struct {
 	sem semaphore
@@ -139,7 +137,7 @@ func (w *work) execute() {
 
 幸运的是,对上述错误的信号量实现的修改是简单的:
 
-~~~ {prettyprint lang-go}
+~~~ 
 type working chan bool
 func (ch working) acquire() { <-ch }
 func (ch working) release() { ch <- true }
@@ -169,13 +167,13 @@ func newSemaphore(count int) working {
 
 ## Futures
 
----
+
 
 作为对内存访问正确推理的一个事例,下面是一个关于future的一个[实现][1]:
 
 [1]: http://play.golang.org/p/FOFIDeR6EJ
 
-~~~ {prettyprint lang-go}
+~~~ 
 type FutureInt struct {
 	value int
 	ready chan struct{}
@@ -220,11 +218,11 @@ B处对`f.value`的读操作能够观察到A处对`f.value`的赋值.
 
 ## Once
 
----
+
 
 下面是一个错误的尝试快路延迟初始化的例子,该例子来自MM:
 
-~~~ {prettyprint lang-go}
+~~~ 
 var a string
 var done bool
 
@@ -276,7 +274,7 @@ MM中通过下面的例子阐述了这点:如果一个goroutine中有这样的�
 
 ## Reader Close
 
----
+
 
 另一个不合适的同步的例子来自[the reader closing a channel][1].
 对一个已经关闭的channel进行写操作,根据语言规范可知会导致panic.
@@ -296,7 +294,7 @@ MM中通过下面的例子阐述了这点:如果一个goroutine中有这样的�
 
 ## 互斥
 
----
+
 
 关于MM中使用`sync.Mutex`实现互斥的概念是一个很有趣的例子.
 这里只有对`Unlock`的调用发生在对`Lock`的调用之前.
@@ -309,7 +307,7 @@ MM中通过下面的例子阐述了这点:如果一个goroutine中有这样的�
 
 ## 总结
 
----
+
 
 Go的MM明确指出不提供顺序一致性.简单的说就是,
 在源代码中书写的顺序并不意味这发生的顺序就是那样,
