@@ -20,8 +20,8 @@ Test some More text
 
 Further Text, including invocations like:
 
-.code ./x.go /^func main/,/^}/
-.play x.go
+.code -numbers ./x.go /^func main/,/^}/
+.play -edit x.go
 .image /images/Hello_Present/gopher.png
 .link http://github.com/tw4452852 github
 .html ./file.html
