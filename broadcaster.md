@@ -1,4 +1,4 @@
-[zz] Broadcast with linked channels | 2013-06-27
+[zz] Broadcast with linked channels | 2013-06-27 | go
 
 [原文在此](http://rogpeppe.wordpress.com/2009/12/01/concurrent-idioms-1-broadcasting-values-in-go-with-linked-channels/)
 

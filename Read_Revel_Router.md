@@ -1,4 +1,4 @@
-Read Revel - Router | 2012-12-05
+Read Revel - Router | 2012-12-05 | go
 
 This blog is based on the [Revel web framework][revel_github], So I will
 introduce this framework firstly.If you are the newbie, here is the

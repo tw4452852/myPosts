@@ -1,4 +1,4 @@
-[译] Understanding the Go Memory Model | 2013-05-30
+[译] Understanding the Go Memory Model | 2013-05-30 | go
 
 [原文在此](https://docs.google.com/document/d/163LwGViH_RSv5YEHmwixBJEjOOi3LYJbMhKY7sq3z1Q/edit?usp=sharing)
 

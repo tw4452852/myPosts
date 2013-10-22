@@ -1,4 +1,4 @@
-Read Revel - Config | 2012-12-18
+Read Revel - Config | 2012-12-18 | go
 
 The application config file is named app.conf and uses the syntax accepted by
 [goconfig](https://github.com/robfig/goconfig), which is similar to Microsoft INI files.

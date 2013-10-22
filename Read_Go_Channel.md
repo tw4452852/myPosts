@@ -1,4 +1,4 @@
-Read Go - Channel | 2013-06-05
+Read Go - Channel | 2013-06-05 | go
 
 今天主要说说Go中channel的实现机制,其中主要有以下几个部分:
 
