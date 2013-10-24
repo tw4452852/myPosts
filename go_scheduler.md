@@ -57,7 +57,7 @@ Go结合两者的优势(M:N调度器).
 
 为了实现任务的调度,go调度器用了3个主要的概念:
 
-![our-cast](http://morsmachine.dk/our-cast.jpg)
+![our-cast](images/our-cast.jpg)
 
 三角形代表os线程.它是os负责管理的线程,
 这和标准的POSIX线程很像.在runtime代码中,它被叫做M(代表机器).
@@ -72,7 +72,7 @@ Go结合两者的优势(M:N调度器).
 在runtime中,它被叫做P(处理器).
 关于它,有必要多说一点.
 
-![in-motion](http://morsmachine.dk/in-motion.jpg)
+![in-motion](images/in-motion.jpg)
 
 这里,我们看见2个线程(M),每个都有一个上下文(P),
 每个都运行着一个goroutine(G).
@@ -112,7 +112,7 @@ Go结合两者的优势(M:N调度器).
 由于一个线程不能一边执行代码一边阻塞等待系统调用,
 我们需要转移上下文保证持续的调度.
 
-![syscall](http://morsmachine.dk/syscall.jpg)
+![syscall](images/syscall.jpg)
 
 这里我们可以看出一个线程放弃他的上下文,这样另外的线程可以再用它.
 调度器会保证有足够的线程运行所有的上下文.
@@ -144,7 +144,7 @@ runtime使用调用系统调用的goroutine,而将线程保留了下来.
 但是如果全局运行队列为空呢?
 那么它将从其他的地方偷点工作来做.
 
-![steal](http://morsmachine.dk/steal.jpg)
+![steal](images/steal.jpg)
 
 这里的其他的地方指的是其他的上下文.
 当一个上下文没有工作可做时,它会尝试从别的一个上下文中偷一般的工作量来做.

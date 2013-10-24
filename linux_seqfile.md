@@ -7,7 +7,7 @@ Sequential file | 2013-05-02 | kernel
 
 问题首先出现在网上找到的一片[关于seq_file使用的文章][1]，其中主要的逻辑图如下:
 
-![wrong](http://www.tldp.org/LDP/lkmpg/2.6/html/figures/seq_file.png)
+![wrong](images/seq_file.png)
 
 [1]: http://www.tldp.org/LDP/lkmpg/2.6/html/x861.html
 
