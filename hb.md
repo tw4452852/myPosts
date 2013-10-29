@@ -1,4 +1,4 @@
-[zz] The Happens-Before Relation | 2013-07-04
+[zz] The Happens-Before Relation | 2013-07-04 | multicore
 
 [原文在此](http://preshing.com/20130702/the-happens-before-relation)
 
@@ -78,7 +78,7 @@ void main()
 我们将清楚看到第二条机器指令(对B的赋值)完成时,对A的赋值还没有.
 换句话说,(1)并没有在(2)之前发生!
 
-![debug](http://preshing.com/wp-content/uploads/2013/07/foo-debugger.png)
+![debug](images/foo-debugger.png)
 
 那么,这里违反了*happens-before* 关系了吗?让我们来分析下,根据定义,
 操作(1)对内存的影响必须在操作(2)执行之前对其可见.

@@ -1,4 +1,4 @@
-Read Go - Sync | 2013-06-06
+Read Go - Sync | 2013-06-06 | go
 
 今天来说说Go中提供一些同步方法,主要有大家都熟悉的:
 - mutex

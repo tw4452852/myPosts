@@ -1,5 +1,6 @@
 Hello Present
 23:23 20 Oct 2013
+Tags: go
 
 * Section test
 
@@ -22,7 +23,8 @@ Further Text, including invocations like:
 
 .code -numbers ./x.go /^func main/,/^}/
 .play -edit x.go
-.image /images/Hello_Present/gopher.png
+.image gopher.png
+.image http://www.gravatar.com/avatar/9f1b4bb0e4fbe91e6fb30b00fcb59cc3.png
 .link http://github.com/tw4452852 github
 .html ./file.html
 

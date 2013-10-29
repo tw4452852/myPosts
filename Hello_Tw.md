@@ -1,4 +1,4 @@
-Hello Tw | 2012-12-04
+Hello Tw | 2012-12-04 |
 
 This is my blog that I used about two days to build it on [Heroku][heroku] cloud
 application platform.This blog system is based on the [revel][revel] which is very good

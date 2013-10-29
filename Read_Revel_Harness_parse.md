@@ -1,4 +1,4 @@
-Read Revel - Harness(parse) | 2012-12-20
+Read Revel - Harness(parse) | 2012-12-20 | go
 
 If you ever used the revel, you will find that there is no main program in the first time.
 But once you have inputed cmd `revel run /path/to/app`, you will find there is a `main.go` in

@@ -1,4 +1,4 @@
-Read Go - Schedule | 2013-05-21
+Read Go - Schedule | 2013-05-21 | go
 
 今天主要说下Go中的schedule([这是设计文档][1]), 首先有一点必须明确:
 
