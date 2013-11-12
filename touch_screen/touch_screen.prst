@@ -118,6 +118,6 @@ Tags: linux, kernel, driver
 
 .code s3c2410_ts.c 142,143
 
-对于input子系统的相关细节,不在本篇的讨论范围,后续文章会有详解.
+对于input子系统的相关细节,不在本篇的讨论范围,[[/posts/Linux_input_subsystem][下一篇文章]]会有详解.
 
 FIN.
