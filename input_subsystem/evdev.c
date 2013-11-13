@@ -40,9 +40,9 @@ struct evdev {
 };
 
 struct evdev_client {
-	unsigned int head;
-	unsigned int tail;
-	unsigned int packet_head; /* [future] position of the first element of next packet */
+	unsigned int head; // 下一次写入的位置
+	unsigned int tail; // 下一次读取的位置
+	unsigned int packet_head; // 如果一个数据包,包含多个event,则指向第一个event的位置
 	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
 	struct wake_lock wake_lock;
 	bool use_wake_lock;
