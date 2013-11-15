@@ -1,0 +1,200 @@
+Linux driver model
+16:00 14 Nov 2013
+Tags: linux, kernel, driver
+
+* 简介
+
+Linux驱动模型最开始出现在2.5.45,当时它的出现主要是为了统一内核对象的引用计数.
+而如今他的角色已经进化成设备模型和sys文件系统的粘合剂.
+其中有几个概念必须要明确:
+
+- `kobject:` 一个 `kobject` 有一个属于自己的名字和一个引用计数.同时,为了支持层级关系,也有一个指向父节点的指针,其他的还包括类型,以及在sysfs中的位置.  `kobject` 本身没有什么意义,一般它都是被嵌入在其他有意义的结构体中.
+- `ktype:` 嵌入 `kobject` 的对象的类型.每个嵌入 `kobject` 的数据结构都会对应一个 `ktype` ,它主要用于控制 `kobject` 创建和销毁时的动作.
+- `kset:` 一系列 `kobject` 的集合.集合中的 `kobject` 可以是同一种类型,也可以不同类型.其中, `kset` 自身也会嵌入一个 `kobject` 可以看作一个链表的头.
+
+在sysfs中的每个文件夹就对应一个 `kobject` .
+
+* kobject
+
+.code kobject.h 60,73
+
+`kobject` 内部这些字段的初始化主要通过 `kobject_init` 完成.
+
+.code kobject.h 85
+
+这里的 `ktype` 是必须的.
+
+.code kobject.h 108,114
+
+其中sysfs操作集中包括2个函数,一个负责文件的读取,一个负责文件的写入.
+而这些文件就是这里的属性,其中每个属性包括名字和文件访问权限.
+
+为了将 `kobject` 注册到sysfs中,下一步就是调用 `kobject_add`
+
+.code kobject.h 87,88
+
+在该函数中建立起 `kobject` 对应的父节点和名字.
+对于父节点的选取,如果该 `kobject` 属于特定的 `kset`,
+那么必须首先设置好 `kset` 之后才能调用该函数.
+如果该 `kset` 自身关联一个 `kobject`, 那么这里的 `parent` 参数可以为NULL,
+那么该 `kobject` 的父节点即为 `kset` 本身.
+
+当 `kobject` 完成注册之后,最后一步便是"向世界宣布我诞生了！",
+这里是通过 `kobject_uevent` 完成的:
+
+.code kobject.h 207
+
+该函数的逻辑主要是找到该 `kobject` 所对应的 `kset`,因为 `kset`
+中会指定发送事件的方法(后面会讲到),最终调用该方法.
+
+`kobject` 资源的释放是通过 `kobject_put` 完成的.
+一般情况下,该函数只是将引用计数减一( `kobject` 初始化时,引用计数为1),
+当计数为0时,发送 `KOBJ_REMOVE` 事件告知其他模块,然后释放相关资源.
+如果你不想直接释放资源,只是让其对其他模块不可见,可以调用 `kobject_del` ,
+该函数只是将其从sysfs中删除,但是引用计数保持不变,
+当你真正需要释放该资源时,再调用 `kobject_put` 即可.
+
+* kset
+
+.code kobject.h 159,164
+
+.code kobject.h 123,128
+
+`kset` 和 其中的 `kobject` 的关系如下图所示:
+
+.image kset.png
+
+* 总线,设备,驱动
+
+上面说的 `kobject` 概念毕竟太底层,对于驱动开发来说,
+linux为我们在此基础上又做了一次抽象,
+主要抽象出了3个概念: 总线,设备和驱动.
+
+在开始之前,有必要区分两个容易混淆的概念:总线类型和总线设备.
+总线类型是关联设备和驱动的虚拟概念,只是表示一种类型.
+而总线设备是一个设备,一般对应总线控制器,这是软件对硬件设备的一种抽象.
+
+** device
+
+`device` 结构是对设备的抽象:
+
+.code device.h 627,676
+
+其中 `device_private` 比较关键,它主要是为驱动核心系统提供所有的信息.
+
+.code base.h 73,81
+
+设备的初始化由 `device_register`
+完成,该函数会首先初始化device中的相关字段,
+之后将初始化好的内嵌 `kobject` 添加到系统中.
+
+** driver
+
+.code device.h 214,235
+
+同样,驱动核心所关系的所有数据在 `driver_private` 中:
+
+.code base.h 46,52
+
+驱动的注册由 `driver_register` 完成,
+在注册之前,每个 `driver` 必须属于一个总线类型,
+这里同样会创建一个 `kobject` ,并添加到系统中.
+
+** bus_type
+
+.code device.h 89,111
+
+驱动核心关系的所有信息,都在 `subsys_private` 中:
+
+.code base.h 28,43
+
+** class
+
+一个类是一个设备的高级视图,它抽象出低级的实现细节.
+驱动可以见到一个SCSI磁盘或者一个ATA磁盘,在类的级别,它们都是磁盘.
+类允许用户空间基于它们做什么来使用设备,
+而不是它们如何被连接或者它们如何工作, 在代码中是由 `class` 结构体表示:
+
+.code device.h 330,354
+
+* 实例分析
+
+最后我们分析一个实际的例子,将上面涉及到的概念串起来.
+这里就拿 `platform_bus` , `platform_device` 和 `platform_driver` 做为例子.
+
+首先,在系统初始化过程中,首先创建一根软件虚拟的总线 `platform_bus`:
+
+.code platform.c 837,850
+
+可见,这里主要有2个工作,首先,会创建一个虚拟的总线设备,
+之所以称之为虚拟,是因为它不对应与真是的硬件设备(例如总线控制器):
+
+.code platform.c 29,31
+
+这样便会在 `/sys/device/` 目录下生成一个platform目录
+
+之后便是注册一个总线类型:
+
+.code platform.c 828,834
+
+这样一条名为 `platform` 的总线就创建好了,
+同样,在 `/sys/bus/` 目录下会生成一个platform的目录
+
+下面是 `platform_device` 的注册,
+那拿[[/posts/Linux_LCD_driver][之前一篇文章]]中的lcd设备为例,
+其实它便是一个 `platform_device` 设备.
+
+.code ../lcd/devs.c 850,859
+
+.code platform.c 354,359
+
+这里首先由 `device_initialize` 初始化 `device` 结构体,
+接着,当然是把初始化好的device加入的驱动模型中去.
+不过,在加入之前,还有一些关系必须要先初始化好.
+
+首先是该设备的父节点:
+
+.code platform.c 271,272
+
+可见,这里的父节点,就是上面提到的在系统初始化时,
+软件虚拟的总线设备 `platform_bus` .
+
+接着是设备所属的总线类型:
+
+.code platform.c 274
+
+同样是之前注册过的platform总线类型
+
+最终,将该设备加入到系统中.
+
+.code platform.c 307,309
+
+最后是 `platform_driver` 的注册,
+同样以lcd驱动的注册为例.
+
+.code ../lcd/s3c2410fb.c 1096,1105
+
+.code ../lcd/s3c2410fb.c 1118,1120
+
+同样,在驱动被加入到系统之前,需要指定所属的总线类型.
+
+.code platform.c 470,472
+
+细心的可能发现,驱动相关的操作集是定义在 `platform_driver` 结构体中,
+所以这里需要做一个封装:
+
+.code platform.c 473,478
+
+这里只关注 `probe` 方法,其他方法同理可得.
+
+.code platform.c 437,443
+
+可以看出这里通过 `device` 和 `driver` 分别得到 `platform_device` 和
+`platform_driver`,最终调用 `platform_driver->probe` 方法.
+其中的奥妙便是linux提供的 `container_of` 宏,
+原理就是将指向结构体中字段的指针 - 该字段在结构体的偏移,
+从而得到指向该结构体的指针.
+
+最后一步,将初始化好的 `driver` 注册到系统中.
+
+FIN.
