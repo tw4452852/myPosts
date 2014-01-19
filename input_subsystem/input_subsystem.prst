@@ -1,0 +1,165 @@
+Linux input subsystem
+10:00 12 Nov 2013
+Tags: linux, kernel, driver
+
+* 简介
+
+本文接着[[/posts/Linux_Touch_Screen_driver][上一篇文章]]讲述linux中的输入子系统, Input subsystem 旨在统一各式各样的输入设备,
+起着承上启下的作用,对底层设备驱动层和上层用户层提供统一的访问借口,
+下面来看下整体的框架:
+
+.image framework.gif
+
+这里包括3个抽象层:
+
+- 设备驱动层: 用来产生各种类型的输入事件
+- 输入子系统: 转发相应的输入事件给感兴趣的接收程序
+- 事件处理层: 对收到的事件进行处理,例如转发给用户态程序,或者转发给其他接受模块
+
+设备驱动层在[[/posts/Linux_Touch_Screen_driver][上一篇文章]]已经讲过了,
+这里采用从下到上的方式,主要分析后面两层.
+
+* 输入子系统
+
+这一层主要是起到衔接的作用,用于建立事件发送方(硬件输入设备)和事件接收方的关系,这个关系是n-m的关系,所以这里有3个主要的数据结构用于软件抽象:
+
+- `input_dev`: 抽象输入事件的生产者
+- `input_handle`: 抽象多对多的关系
+- `input_handler`: 抽象事件的消费者(接收者)
+
+三者之间相互联系,从而建立起整个子系统:
+
+.image connect.png
+
+** input_dev
+
+.code input.h 1253,1321
+
+** input_handle
+
+.code input.h 1445,1457
+
+** input_handler
+
+.code input.h 1412,1431
+
+** 事件传递
+
+下面我们通过一个实例来了解事件是如何传递的,这里就拿[[/post/Linux_Touch_Screen_driver][上一篇文章]]中,
+当在触摸屏上按下时,产生的事件来说.
+
+首先是设备驱动层向输入子系统报告按键事件: `input_report_key(ts.input,`BTN_TOUCH,`1)`
+
+.code input.h 1508,1511
+
+.code input.c 368,369
+
+其中,各个参数的值如下:
+
+- `dev:` 当前touch screen设备
+- `type:` `EV_KEY`
+- `code:` `BTN_TOUCH`
+- `value:` 1,表示按下
+
+接着获得 `input_dev->event_lock` 锁,进入 `input_handle_event`:
+
+.code input.c 263,275
+
+这里,如果设备支持自动重按的功能,会开始一个周期性的timer,进行软件自动重发.
+我们这里不考虑这种情况,接着往下看.
+
+最终该事件是需要传递给相应的handler:
+
+.code input.c 347,348
+
+.code input.c 106,126
+
+这里,如果该handle有指定的handler已绑定,则将事件交给其处理,
+否则,遍历所有的关联的handler,将事件交给每个满足条件的handler进行处理.
+队列的开头会有一些过滤器,接着才是一些真正用于处理事件的handler.
+
+这样,相应的事件就被传递给了相关联的handler了.
+
+** 事件接收
+
+在系统初始化的过程中,可能会有各式各样的事件处理handler注册,
+这里选择一个通用的handler进行分析: `evdev` .
+该handler会接收所有的事件,并提供给用户态获取.
+
+首先是向输入子系统注册该handler:
+
+.code evdev.c 1085,1098
+
+之前说过,有些handler只是充当过滤器的作用,
+所以用来区分两者的,是通过 `input_handler->fops` ,
+如果为空,则该handler是一个过滤器,反之,则是一个真实的事件处理handler.
+对于真实的handler会将放入 `input_table` 中,
+
+.code input.c 1955,1961
+
+而所有类型的handler都会挂入 `input_handler_list` 中,
+
+.code input.c 1963
+
+最后,遍历所有注册的输入设备,对那些该handler支持的设备建立关系.
+
+.code input.c 1965,1966
+
+.code input.c 916,925
+
+这里 `evdev_handler` ,会和所有的设备建立关系,关系建立的过程在
+`input_handler->connect` 函数中.
+
+之前说过,这里的关系是多对多的关系,是由 `input_handle` 来表示,
+所以在connect函数中,一定会注册一个handle
+
+.code evdev.c 1034,1037
+
+.code evdev.c 1045,1047
+
+在 `input_register_handle` 中,便是将handle分别挂入 `input_dev`
+和 `input_handler` 的列表中.
+这里唯一需要注意的是,如果handler是一个过滤器,则挂到设备的列表的开头,
+反之,则挂入列表的结尾.
+
+.code input.c 2065,2068
+
+那么用户态程序是如何获得输入事件的呢,这里是通过访问设备文件节点来实现的
+(/dev/input/evdevX).
+
+每当一个用户态程序打开该文件,对于 `evdev` 来说都是一个 `client`:
+
+.code evdev.c 42,56
+
+所以在设备文件的open函数中,主要就是初始化一个 `evdev_client`:
+
+.code evdev.c 318,331
+
+这里用于存放事件的buffer是一个ring, 事件的格式如下:
+
+.code input.h 26,31
+
+当收到一个事件时,便将其放入该buffer中:
+
+.code evdev.c 71,72
+
+这里有两个特殊情况需要考虑,当buffer中没有剩余的空间,
+则只会保留最近的一次event,同时在它之前添加一个特殊的事件,
+用于标识之前的事件被丢弃了.
+
+.code evdev.c 74,89
+
+还有一种情况就是收到一个 `EV_SYN` 事件,这样将 `packet_head` 指向
+即将写入的事件的位置.
+
+.code evdev.c 91,95
+
+这里同样提供用户态程序向kernel写事件的方法,
+逻辑和从buffer中取事件正相反.
+
+当然用户态程序也可以使用论询或异步通知的机制来读取事件.
+具体见 `poll` 和 `fasync` 方法.
+
+.code evdev.c 938,952
+
+FIN.
