@@ -51,7 +51,7 @@ cache中,然后再将其内容返回.
 拿一些物理页用于填充.
 这部分的操作在函数 `rmqueue_bulk` 中:
 
-.code page_alloc.c 1141,1165
+.code page_alloc.c 1137,1161
 
 注意,这里的 `order` 为0,也是说每次申请一个物理页,
 而 `count` 则为 `pcp->batch` . `__rmqueue`
@@ -64,12 +64,12 @@ cache中,然后再将其内容返回.
 如果是 `cold cache` 则将物理页挂入链表尾部,
 反之插入到链表开头:
 
-.code page_alloc.c 1344,1349
+.code page_alloc.c 1340,1345
 
 如果该链表中的物理页超过了设定的阈值( `pcp->high` ),
 那么需要将部分页归还给 `zone` `buddy` 系统:
 
-.code page_alloc.c 1350,1353
+.code page_alloc.c 1346,1349
 
 这里由于存在多个 `migrate` `type` ,故当归还的时候,
 采用了平均归还的策略,给每个 `migrate` `type` 都归还物理页.
