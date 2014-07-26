@@ -1,0 +1,207 @@
+Memory Area Management - The Slob Allocator
+22:00 24 Jul 2014
+Tags: linux, kernel
+
+* 简介
+
+`slob` (Simple List Of Blocks)
+是一个为嵌入式系统特殊定制的内存分配器,
+通常来说这类系统只有比较少的内存可供使用.
+`slob` 使用一种非常简单的优先匹配的算法来查找可用的memory area,
+而不像古老的 `K&R-style` `heap` `allocator`.
+`slob`非常适合对内存使用有严格要求的系统,
+不过它也有它的缺点:内存碎片.
+
+* Unit
+
+在 `slob` 中所有的memory area的大小的计量单位被称为 `slobidx_t`,
+我们先来看下它的定义:
+
+.code slob.c 84,88
+
+可以看出,根据物理页的大小,该最小单位可能是 `2/4` `bytes`.
+
+而每个 `slob` 的描述结构就是由 `slobidx_t` 组成:
+
+.code slob.c 90,93
+
+* Slob management
+
+所有的 `slob` 根据大小会被放入到3个全局链表中:
+
+.code slob.c 98,102
+
+- 大小小于256字节的 `slob` 放入到 `free_slob_small`
+- 大小小于1024字节的 `slob` 放入到 `free_slob_medium`
+- 大小小于一个物理页的 `slob` 放入到 `free_slob_large`
+- 大于一个物理页的话,直接从 `zone` `page` `allocator` 中分配
+
+* Allocating a object from cache
+
+有了上面的基本概念,我们就可以看看从一个 `cache` 中是如何分配一个 `object`.
+
+`slob` 对外提供的分配接口为 `kmem_cache_alloc_node`:
+
+.code slob.c 537
+
+如果 `object` 的大小小于一个物理页的大小,从 `slob` 中查找,
+反之,直接从 `zone` `page` `allocator` 中查找.
+当找到可用的memory area,对其进行初始化之后便可以返回给使用者:
+
+.code slob.c 545,554
+
+其中 `slob_new_pages` 只是对 `allocate_pages` 的简单封装:
+
+.code slob.c 190,205
+
+这里我们主要关注如何从 `slob` 中分配一个 `object`.
+
+首先根据分配的大小,确定 `slob` 从哪里找:
+
+.code slob.c 276,281
+
+确定了查找的方向,下面就是遍历该链表上的 `slob`,
+如果 `slob` 上的可用空间小于需要的分配的大小,
+继续遍历该链表上的下一个 `slob`:
+
+.code slob.c 283,285
+
+.code slob.c 295,296
+
+这里的 `SLOB_UNITS` 宏是将以字节为单位的大小转换成以 `slobidx_t`
+为单位,并做相应的对齐:
+
+.code slob.c 124,125
+
+如果当前的 `slob` 满足要求,那么我们尝试从中获得可用的空间,
+如果尝试失败,继续查找下一个 `slob`:
+
+.code slob.c 299,302
+
+这里我们先跳过从一个 `slob` 中分配的流程,继续往下看.
+
+如果找到了可用的memory,我们便可以退出遍历了.
+不过,为了防止每次遍历都从链表开头遍历,
+因为从链表开头到当前节点之前的所有 `slob` 的可用空间都不够,
+为了防止每次重复的遍历,这里做了优化,将链表头 `slob_list`
+放到当前节点 `prev->next` 的前面,这样,下次遍历时,
+便从当前节点开始查找:
+
+.code slob.c 304,309
+
+如果该链表上所有 `slob` 都不能满足要求,
+那么我们只能申请一个新的 `slob` 了,
+这里,我们新申请的 `slob` 的大小为一个物理页的大小.
+
+.code slob.c 315,320
+
+下面就是对新申请的 `memory` `area` 进行初始化了:
+
+.code slob.c 323,327
+
+需要注意的是, `slob` 的管理信息是存放在 `struct` `page`
+结构体中的,而不像 `slab` 需要申请额外的空间存放这些信息.
+
+- `sp->unites:` 该 `slob` 的大小
+- `sp->freelist:` 该 `slob` 上可用的空闲的起始地址
+- 初始化 `slob_t` 的大小,以及下一个 `slob_t` 与当前节点的偏移:
+
+.code slob.c 145,155
+
+如果memory area的大小大于一个 `unit`,
+第一个 `unit` 中存放该大小,
+第二个 `unit` 中存放偏移
+反之,说明大小只够容纳一个 `unit`,
+那么该 `unit` 中存放偏移的负值.
+
+最后将 `slob` 挂入到对应的链表中:
+
+.code slob.c 112,116
+
+最终,我们尝试从该 `slob` 分配一个 `object`.
+这里我们依次遍历该 `slob` 上的可用空间:
+
+.code slob.c 222
+
+对应每个可用的空间,首先查看其是否有足够的空间,
+不过,如果有地址对齐的要求,需要把用于对齐的空间
+也考虑进去
+
+.code slob.c 223,229
+
+如果有足够的空间,那么我们便可以从当前节点中去分配了.
+不过,如果之前有用于对齐的空间,需要将其剔除.
+
+.code slob.c 232,239
+
+下面就是比较该空间的大小和所需的大小,
+我们先来看该空间的大小正好等于所需的大小的情形,
+这时,只需将该空间从 `freelist` 中拿出即可:
+
+.code slob.c 241,246
+
+反之,说明该空间大于需要的空间,
+这时只需将我们所需的空间取出,
+并将剩下的空间放入到 `freelist`:
+
+.code slob.c 247,253
+
+最终调整该 `slob` 可用的空间大小.
+如果该 `slob` 没有空闲的空间了,
+将其从对应的链表中删除.
+
+.code slob.c 255,257
+
+.code slob.c 118,122
+
+至此,申请流程结束.
+
+* Freeing a object back to cache
+
+下面我们来看一个 `object` 是如何释放的,
+这里首先还是判断释放的 `object` 的大小,
+如果其大于一个物理页,直接返回给 `zone` `page` `allocator`,
+否则,返回给 `slob`:
+
+.code slob.c 563,566
+
+这里,我们只关心后一点.
+首先找到该 `object` 对应的物理页,
+如果该物理页除了该 `object` 都被释放了,
+那么,我们直接将该物理页释放给 `zone` `page` `allocator`:
+
+.code slob.c 352,366
+
+如果该物理页上的 `objects` 之前从没被释放过,
+说明此次释放的 `object` 为第一个,
+那么该 `slob` 的状态即将变为部分空闲.
+那么初始化该 `slob`,并根据 `object` 的大小,
+放入到对应的全局链表中.
+
+.code slob.c 368,383
+
+如果该物理页的状态已经为部分空闲了,
+那么我们就需要在其 `freelist` 上找到合适的位置,
+将该 `object` 放进去,
+这里需要注意的是 `freelist` 上的空闲 `objects`
+按照地址大小顺序排列的.
+我们首先来考虑,释放的 `object` 的地址小于 `freelist`
+上的第一个 `object`,
+这时我们需要将释放的 `object` 插入到 `freelist` 的头部,
+而且,如果该节点和其之后的节点可以合并,首先将他们合并.
+
+.code slob.c 391,397
+
+如果该 `object` 的地址大于 `freelist` 上的第一个节点,
+那么我们首先在 `freelist` 上找到需要插入的位置的前一个
+和后一个节点.
+
+.code slob.c 399,404
+
+接着将其插入,这里在插入之前同样考虑合并的可能性:
+
+.code slob.c 406,416
+
+至此,释放流程结束.
+
+FIN.
