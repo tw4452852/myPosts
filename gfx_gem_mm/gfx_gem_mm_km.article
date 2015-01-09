@@ -1,0 +1,112 @@
+GEM Memory Address Management - Kernel Mode
+10:44 22 Dec 2014
+Tags: linux, kernel, drm, gfx, i915, gem
+
+* 简介
+
+[[/posts/DRM_Memory_Ranger_Allocator][上一篇]]我们说过了 `drm_mm` ,
+这里主要针对 `gem` 中对 `gtt` 地址空间的管理.
+这里主要分用户空间和内核空间, 这里我们首先来看下内核空间是如何管理 `gtt` 空间的,
+以及它提供给用户空间的接口.
+
+* A Single Buffer Object
+
+当 `gtt` 地址空间没有足够的空间时, `gem` 会选出一些 `buffer` 将其绑定的 `gtt`
+空间释放,从而腾出空闲的空间,
+所以这里我们主要看下这个过程.
+
+在开始之前,我们首先了解 `gtt` 空间内的两个 `LRU` 链表:
+
+- `active_list:` 包含那些正在被 `gpu` `render` 的 `buffer`.
+- `inactive_list:` 包含那些当前未被 `gpu` 使用的 `buffer` ,但是它们仍被映射在 `gtt` 空间中.
+
+由于页表的建立和销毁有一定的开销,同时 `buffer` 的大小各异,
+而通过 `gtt` 可以访问的空间只是其中比较小的一部分,
+所以简单的从 `inactive` 链表中按照 `LRU` 的顺序去释放 `buffer`
+不是很效率: 因为有可能释放了很多不相干的小的空间,
+直到恰巧释放了一个足够大的空间.
+
+`gem` 使用了 `drm_mm` 提供的检查器,
+当收集可用的空间时,我们首先尝试从 `inactive_list` 中释放一些空间:
+
+.code i915_gem_evict.c 114,117
+
+这里的 `mark_free` 就是将该空间放入检查器中,并挂入到一个 `unwind_list`
+中,方便后面的释放真实的 `gtt` 空间.
+
+.code i915_gem_evict.c 36,47
+
+如果 `inactive_list` 中没有满足要求的空间,
+那么我们只能去 `active_list` 中找了,不过
+在释放之前,我们必须等待 `gpu` `render` 完.
+所以,这里如果调用者不希望的等待
+那么我们返回没有找到可用的空间:
+
+.code i915_gem_evict.c 119,120
+
+反之,我们遍历 `active_list` :
+
+.code i915_gem_evict.c 123,126
+
+当我们找到满足要求的空间时,
+下面需要做两件事,首先是恢复 `drm_mm` 的内部状态,
+这里,按照反序依次将经过扫描的空间从检查器中删除,
+通过将那些需要真实释放的空间挂入到另一个临时链表( `eviction_list` )中:
+
+.code i915_gem_evict.c 166,177
+
+最后,释放那些空间:
+
+.code i915_gem_evict.c 180,192
+
+* Mutiple Buffer Objects
+
+上述的流程针将单个 `buffer` 映射到 `gtt` 空间中,
+例如在映射 `gtt` 时出现了一个 `page` `fault` ,
+我们可以使用上述的逻辑.
+但是,如果当我们准备一个 `batchbuffer` 给 `gpu`
+去执行时,我们必须确保其中包含的所有的 `buffer`
+在 `gtt` 空间中. 所以我们必须确保在映射后面的 `buffer`
+的时候,不会把之前已经映射好的 `buffer` `unmap` 掉.
+所以我们必须将之前的 `buffer` 标记为 `reserved` 的,
+在 `i915` 的实现中采用的方法是临时 `pin` 一下 `buffer` ,
+使它不会被从 `gtt` 空间中删除.
+
+同时考虑到,如果一些 `buffer` 不能满足 `gtt` 对 `execbuffer`
+的要求,例如对齐要求,那么,我们首先将其释放,之前再重新寻找
+满足要求的空间.
+
+.code i915_gem_execbuffer.c 688,708
+
+可以看出,这里我们通过 `drm_mm_node_allocated` 来区分这些 `buffer` .
+
+* Caching GEM Buffer Objects
+
+由于 `gem` 中有很多 `buffer` `cache` ,所以给设计带来了一定的繁杂度,
+而这其中主要的 `cache` 管理在用户层的 `libdrm` 中.
+由于建立一个 `gem` `object` 的开销是很大的(分配 `shmemfs` 对应的内存,
+而且在一些平台上,还需要刷新 `cache` 的操作), 所以 `buffer` 的重用是十分必要的,
+而且提交工作给 `gpu` 需要很多各种各样的 `buffer` ,所以 `buffer` 的回收是很快的.
+
+所以假如内存不够,我们希望 `kernel` 直接丢弃一些 `buffer` 对应的内存,
+而不是花时间去将这些内存 `swap` 出去(更坏的情况是触发 `OOM`).
+所以 `kernel` 提供一个接口给用户空间,上层可以告诉 `kernel`
+哪些 `buffer` 对应的内存可以被 `kernel` 自由释放,
+而当用户空间再次需要使用这些 `buffer` 的时候,
+同样需要通知 `kernel` , 而 `kernel` 会告知用户
+该 `buffer` 现在对应的内存是否已经被释放.
+
+这里提供给上层的接口是通过 `ioctl` 来实现的,
+名为 `i915_gem_madvise_ioctl`,
+用户空间传下来 `buffer` 的 `handle` ,
+以及对应的标记:
+
+- `I915_MADV_DONTNEED:` 该 `buffer` 对应的内存可以被 `kernel` 释放.
+- `I915_MADV_WILLNEED:` 通知 `kernel` 该 `buffer` 即将被上层使用, `kernel` 需要返回其对应的内存是否被释放.
+
+对于实际物理内存的管理, `kernel` 自身也有 `cache` 的概念,主要有2个全局的链表:
+
+- `bound_list:` 当前在 `gtt` 空间的所有的 `buffer` `objects`
+- `unbound_list:` 当前不在 `gtt` 空间,但是仍然有对应的物理内存与之绑定(这里主要是对 `cache` `flush` 的考虑).
+
+FIN.
