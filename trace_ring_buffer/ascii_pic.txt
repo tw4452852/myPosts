@@ -1,0 +1,400 @@
+// write_stack_start OMIT
+  writer1 start
+     <preempted> writer2 start
+         <preempted> writer3 start
+                     writer3 finishes
+                 writer2 finishes
+  writer1 finishes
+// write_stack_end OMIT
+
+// global_start OMIT
+  +------+
+  |reader|
+  |page  |
+  +------+
+                             tail page
+  head page         commit page  |
+      |                 |        |
+      v                 v        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+	         RING BUFFER
+// global_end OMIT
+
+// writer_preempt_start OMIT
+   Write reserve:
+
+       Buffer page
+      +---------+
+      |written  |
+      +---------+  <--- given back to writer (current commit)
+      |reserved |
+      +---------+ <--- tail pointer
+      | empty   |
+      +---------+
+
+   Write commit:
+
+       Buffer page
+      +---------+
+      |written  |
+      +---------+
+      |written  |
+      +---------+  <--- next position for write (current commit)
+      | empty   |
+      +---------+
+
+
+ If a write happens after the first reserve:
+
+       Buffer page
+      +---------+
+      |written  |
+      +---------+  <-- current commit
+      |reserved |
+      +---------+  <--- given back to second writer
+      |reserved |
+      +---------+ <--- tail pointer
+
+  After second writer commits:
+
+
+       Buffer page
+      +---------+
+      |written  |
+      +---------+  <--(last full commit)
+      |reserved |
+      +---------+
+      |pending  |
+      |commit   |
+      +---------+ <--- tail pointer
+
+  When the first writer commits:
+
+       Buffer page
+      +---------+
+      |written  |
+      +---------+
+      |written  |
+      +---------+
+      |written  |
+      +---------+  <--(last full commit and tail pointer)
+// writer_preempt_end OMIT
+
+// tail_move_normal_start OMIT
+            tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+                        ^
+                        |
+                    head page
+
+
+            tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+                                 ^
+                                 |
+                             head page
+
+
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+                                 ^
+                                 |
+                             head page
+// tail_move_normal_end OMIT
+
+// tail_move_comit_start OMIT
+          reader page    commit page
+              |              |
+              v              |
+             +---+           |
+             |   |<----------+
+             |   |<------------ tail page
+             |   |------+
+             +---+      |
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-H->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+a lot of interrupts here and move tail page ahead ...
+
+          reader page    commit page
+              |              |
+              v              |
+             +---+           |
+             |   |<----------+
+             |   |
+             |   |------+
+             +---+      |
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-H->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+               ^
+               |
+           tail page
+// tail_move_comit_end OMIT
+
+// tail_move_head_1_start OMIT
+            tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-H->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+            tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_head_1_end OMIT
+
+// tail_move_head_2_start OMIT
+           tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_head_2_end OMIT
+
+// tail_move_head_3_start OMIT
+           tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_head_3_end OMIT
+
+// tail_move_head_4_start OMIT
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_head_4_end OMIT
+
+// tail_move_complex_1_start OMIT
+first writer:
+            tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_complex_1_end OMIT
+
+// tail_move_complex_2_start OMIT
+second writer:
+           tail page
+               |
+               v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_complex_2_end OMIT
+
+// tail_move_complex_3_start OMIT
+second writer:
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_complex_3_end OMIT
+
+// tail_move_complex_4_start OMIT
+first writer:
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |--->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_complex_4_end OMIT
+
+// tail_move_hard_1_start OMIT
+second writer:
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-H->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_hard_1_end OMIT
+
+// tail_move_hard_2_start OMIT
+third writer:
+
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-U->|   |--->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-U->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+                    tail page
+                        |
+                        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+                             tail page
+                                 |
+                                 v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_hard_2_end OMIT
+
+// tail_move_hard_3_start OMIT
+first writer:
+                             tail page
+                                 |
+                                 v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+                             tail page
+                                 |
+                                 v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |-H->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+
+// tail_move_hard_3_end OMIT
+
+// tail_move_hard_4_start OMIT
+first writer:
+
+               A        B    tail page
+               |        |        |
+               v        v        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_hard_4_end OMIT
+
+// tail_move_hard_5_start OMIT
+first writer:
+               A        B    tail page
+               |        |        |
+               v        v        v
+    +---+    +---+    +---+    +---+
+<---|   |--->|   |-U->|   |--->|   |-H->
+--->|   |<---|   |<---|   |<---|   |<---
+    +---+    +---+    +---+    +---+
+// tail_move_hard_5_end OMIT
+
+// reader_1_start OMIT
+  +------+
+  |reader|          RING BUFFER
+  |page  |-------H-----------+
+  +------+                   v
+    |             +---+    +---+    +---+
+    |             |   |--->|   |--->|   |
+    |             |   |<---|   |<---|   |<-+
+    |             +---+    +---+    +---+  |
+    |              ^ |               ^ |   |
+    |              | +---------------+ |   |
+    |              +-----H-------------+   |
+    +--------------------------------------+
+// reader_1_end OMIT
+
+// reader_2_start OMIT
+  +------+
+  |reader|          RING BUFFER
+  |page  |-------H-----------+
+  +------+                   v
+    |  ^          +---+   +---+   +---+
+    |  |          |   |-->|   |-->|   |
+    |  |          |   |<--|   |<--|   |<-+
+    |  |          +---+   +---+   +---+  |
+    |  |             |             ^ |   |
+    |  |             +-------------+ |   |
+    |  +-----------------------------+   |
+    +------------------------------------+
+// reader_2_end OMIT
+
+// reader_3_start OMIT
+  +------+
+  |reader|          RING BUFFER
+  |page  |-------H-----------+
+  +------+ <---------------+ v
+    |  ^          +---+   +---+   +---+
+    |  |          |   |-->|   |-->|   |
+    |  |          |   |   |   |<--|   |<-+
+    |  |          +---+   +---+   +---+  |
+    |  |             |             ^ |   |
+    |  |             +-------------+ |   |
+    |  +-----------------------------+   |
+    +------------------------------------+
+// reader_3_end OMIT
+
+// reader_4_start OMIT
+  +------+
+  |buffer|          RING BUFFER
+  |page  |-------H-----------+  <--- New head page
+  +------+ <---------------+ v
+    |  ^          +---+   +---+   +---+
+    |  |          |   |   |   |-->|   |
+    |  |  New     |   |   |   |<--|   |<-+
+    |  | Reader   +---+   +---+   +---+  |
+    |  |  page ----^                 |   |
+    |  |                             |   |
+    |  +-----------------------------+   |
+    +------------------------------------+
+// reader_4_end OMIT
