@@ -98,7 +98,7 @@ linker的相关接口 ( dlopen , dlclose , dlsym 等 ) 就需要acquire 该 mute
 
 而 `__get_thread()` : 
 
-.code pthread_internals.cpp 68,70
+.code pthread_internals.cpp 55,57
 
 原来tid是从保存在 `tls` 中的 `pthread_internal_t` 的tid成员中.
 而 `pthread_internal_t` 初始化工作是在 `pthread_create` 最开始完成的 : 
