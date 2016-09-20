@@ -1,6 +1,6 @@
 A bug related with Android pthread mutex
 14:00 14 Sep 2016
-Tags: android pthread
+Tags: android, pthread
 
 * 概述
 
@@ -158,7 +158,7 @@ bionic的内存管理使用的是jemalloc , 当一块memory被释放, 在一段�
 
 * 结尾
 
-至此 , 问题已分析清楚 , 可能的解决访问 , 可以修改 `sigprocmask` 的实现 . 
+至此 , 问题已分析清楚 , 可能的解决方法 , 可以修改 `sigprocmask` 的实现 . 
 当然我也给android官方提了个[[https://code.google.com/p/android/issues/detail?id=222398][bug]].
 
 FIN.
