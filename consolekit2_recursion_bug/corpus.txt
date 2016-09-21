@@ -1,0 +1,80 @@
+ConsoleKit is a framework for keeping track of the various users, sessions, and seats
+present on a system.  It provides a mechanism for software to react to changes of any
+of these items or of any of the metadata associated with them.
+
+traps: ck-remove-direc[23119] trap int3 ip:7f5d94016750 sp:7ffc5a95fd90 error:0
+
+/usr/lib/ConsoleKit/ck-remove-directory --uid=1000 --dest=/var/run/user/1000
+
+** (ck-remove-directory:28130): ERROR **: Failed to remove /var/run/user/1000, reason was: Permission denied
+[1]    28130 trace trap  ./tools/ck-remove-directory --uid=1000 --dest=/var/run/user/1000
+
+ls -ld /var/run/user/1000 
+drwx------ 2 tw root 40 Sep 21 15:06 /var/run/user/1000
+
+ls -ld /var/run/user/    
+drwxr-xr-x 3 root root 60 Sep 21 15:06 /var/run/user/
+
+#0 0x0000000000410bea in ck_seat_remove_session (seat=seat@entry=0x7fffe8011590, session=0x6680c0, error=error@entry=0x0) at ck-seat.c:701
+#1 0x000000000040ab67 in remove_session_for_cookie (manager=0x6590f0, cookie=cookie@entry=0x65dae0 "totorow-1474285598.732068-49893253", error=error@entry=0x0) at ck-manager.c:3280
+#2 0x000000000040b4e5 in remove_leader_for_connection (cookie=0x65dae0 "totorow-1474285598.732068-49893253", leader=0x64d4f0, data=0x7fffffffdf10) at ck-manager.c:3436
+#3 0x00007ffff72f18d1 in g_hash_table_foreach_remove_or_steal (hash_table=0x652860, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffdf10, 
+    notify=notify@entry=1) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1491
+#4 0x00007ffff72f298c in g_hash_table_foreach_remove (hash_table=<optimized out>, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffdf10)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1537
+#5 0x000000000040c380 in remove_sessions_for_connection (service_name=<optimized out>, manager=0x6590f0) at ck-manager.c:3455
+#6 on_name_owner_notify (connection=<optimized out>, sender_name=<optimized out>, object_path=<optimized out>, interface_name=<optimized out>, signal_name=<optimized out>, parameters=0x672aa0, 
+    user_data=0x6590f0) at ck-manager.c:3491
+#7 0x00007ffff790b9f5 in emit_signal_instance_in_idle_cb (data=0x7fffec0076f0) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gio/gdbusconnection.c:3701
+#8 0x00007ffff7302a55 in g_main_dispatch (context=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3154
+#9 g_main_context_dispatch (context=context@entry=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3769
+#10 0x00007ffff7302dc8 in g_main_context_iterate (context=0x64ac00, block=block@entry=1, dispatch=dispatch@entry=1, self=<optimized out>)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3840
+#11 0x00007ffff730308a in g_main_loop_run (loop=0x652d20) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:4034
+#12 0x0000000000408840 in main (argc=1, argv=0x7fffffffe288) at main.c:307
+
+console-kit-daemon[29110]: GLib-CRITICAL: g_hash_table_foreach_remove_or_steal: assertion 'version == hash_table->version' failed
+
+#0  0x00007ffff72f18d1 in g_hash_table_foreach_remove_or_steal (hash_table=0x652860, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffd6c0, 
+    notify=notify@entry=1) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1491
+#1  0x00007ffff72f298c in g_hash_table_foreach_remove (hash_table=<optimized out>, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffd6c0)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1537
+#2  0x000000000040c380 in remove_sessions_for_connection (service_name=<optimized out>, manager=0x6590f0) at ck-manager.c:3455
+#3  on_name_owner_notify (connection=<optimized out>, sender_name=<optimized out>, object_path=<optimized out>, interface_name=<optimized out>, signal_name=<optimized out>, 
+    parameters=0x7fffec00d630, user_data=0x6590f0) at ck-manager.c:3491
+#4  0x00007ffff790b9f5 in emit_signal_instance_in_idle_cb (data=0x7fffec00d580) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gio/gdbusconnection.c:3701
+#5  0x00007ffff7302a55 in g_main_dispatch (context=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3154
+#6  g_main_context_dispatch (context=context@entry=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3769
+#7  0x00007ffff7302dc8 in g_main_context_iterate (context=context@entry=0x64ac00, block=block@entry=1, dispatch=dispatch@entry=1, self=<optimized out>)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3840
+#8  0x00007ffff7302e6c in g_main_context_iteration (context=0x64ac00, context@entry=0x0, may_block=may_block@entry=1) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3901
+#9 0x0000000000414c5c in ck_run_programs (dirpath=dirpath@entry=0x429f18 "/usr/lib64/ConsoleKit/run-session.d", action=action@entry=0x427037 "session_removed", 
+    extra_env=extra_env@entry=0x7fffffffd8b0) at ck-run-programs.c:220
+#10 0x000000000041416c in ck_session_run_programs (session=session@entry=0x6680c0, action=action@entry=0x427037 "session_removed") at ck-session.c:1330
+#11 0x000000000040a553 in on_seat_session_removed_full (seat=0x7fffe8011590, session=0x6680c0, manager=0x6590f0) at ck-manager.c:2463
+#12 0x00007ffff76030d7 in g_cclosure_marshal_VOID__OBJECTv (closure=0x670470, return_value=<optimized out>, instance=<optimized out>, args=<optimized out>, marshal_data=0x0, 
+    n_params=<optimized out>, param_types=0x66c8f0) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gobject/gmarshal.c:2102
+#13 0x00007ffff7600237 in _g_closure_invoke_va (closure=closure@entry=0x670470, return_value=return_value@entry=0x0, instance=instance@entry=0x7fffe8011590, args=args@entry=0x7fffffffdc78, 
+    n_params=1, param_types=0x66c8f0) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gobject/gclosure.c:864
+#14 0x00007ffff7618f88 in g_signal_emit_valist (instance=0x7fffe8011590, signal_id=<optimized out>, detail=0, var_args=var_args@entry=0x7fffffffdc78)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gobject/gsignal.c:3292
+#15 0x00007ffff7619c0a in g_signal_emit (instance=instance@entry=0x7fffe8011590, signal_id=<optimized out>, detail=detail@entry=0)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gobject/gsignal.c:3439
+#16 0x0000000000410bea in ck_seat_remove_session (seat=seat@entry=0x7fffe8011590, session=0x6680c0, error=error@entry=0x0) at ck-seat.c:701
+#17 0x000000000040ab67 in remove_session_for_cookie (manager=0x6590f0, cookie=cookie@entry=0x65dae0 "totorow-1474285598.732068-49893253", error=error@entry=0x0) at ck-manager.c:3280
+#18 0x000000000040b4e5 in remove_leader_for_connection (cookie=0x65dae0 "totorow-1474285598.732068-49893253", leader=0x64d4f0, data=0x7fffffffdf10) at ck-manager.c:3436
+#19 0x00007ffff72f18d1 in g_hash_table_foreach_remove_or_steal (hash_table=0x652860, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffdf10, 
+    notify=notify@entry=1) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1491
+#20 0x00007ffff72f298c in g_hash_table_foreach_remove (hash_table=<optimized out>, func=func@entry=0x40b4b0 <remove_leader_for_connection>, user_data=user_data@entry=0x7fffffffdf10)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/ghash.c:1537
+#21 0x000000000040c380 in remove_sessions_for_connection (service_name=<optimized out>, manager=0x6590f0) at ck-manager.c:3455
+#22 on_name_owner_notify (connection=<optimized out>, sender_name=<optimized out>, object_path=<optimized out>, interface_name=<optimized out>, signal_name=<optimized out>, parameters=0x672aa0, 
+    user_data=0x6590f0) at ck-manager.c:3491
+#23 0x00007ffff790b9f5 in emit_signal_instance_in_idle_cb (data=0x7fffec0076f0) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/gio/gdbusconnection.c:3701
+#24 0x00007ffff7302a55 in g_main_dispatch (context=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3154
+#25 g_main_context_dispatch (context=context@entry=0x64ac00) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3769
+#26 0x00007ffff7302dc8 in g_main_context_iterate (context=0x64ac00, block=block@entry=1, dispatch=dispatch@entry=1, self=<optimized out>)
+    at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:3840
+#27 0x00007ffff730308a in g_main_loop_run (loop=0x652d20) at /var/tmp/portage/dev-libs/glib-2.46.2-r3/work/glib-2.46.2/glib/gmain.c:4034
+#28 0x0000000000408840 in main (argc=1, argv=0x7fffffffe288) at main.c:307
+

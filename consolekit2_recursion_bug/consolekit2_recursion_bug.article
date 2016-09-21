@@ -1,0 +1,101 @@
+A memory corruption bug in ConsoleKit2
+15:00 21 Sep 2016
+Tags: linux, concurrency
+
+* background
+
+这几天经常无法ssh登录到自己的服务器 , 通过htop发现console-kit-daemon这个
+进程占用了100%的cpu , 问题应该就是它 .
+
+* what is console-kit-daemon
+
+首先 , 弄清楚它是什么 :
+
+.code corpus.txt 1,3
+
+也就是说 , 当通过ssh登录系统 , 从consolekit会为我们准备一个运行环境 , 
+并通过一些抽象 ( session , seat ) 进行管理 . 当我们退出时 , 这些环境
+将被销毁 . 
+
+* ck-remove-dirtory
+
+查看syslog , 发现每当退出时， 都会出现以下log :
+
+.code corpus.txt 5
+
+从名字来看 , 它好像用于删除一个目录 , 那么到底是删除哪个目录呢 ? 
+又是谁调用它的呢 ? 
+要回答这些问题 , 只有查看consolekit的代码 , 通过搜索 , 发现是在这里 :
+
+.code ck-sysdeps-unix.c /remove_rundir_start OMIT/,/remove_rundir_end OMIT
+
+而调用它的地方有两处 , 首先是当用户退出时 :
+
+.code ck-sysdeps-unix.c /ck_remove_runtime_dir_for_user_start OMIT/,/ck_remove_runtime_dir_for_user_end OMIT
+
+第二个新用户登录时为其准备环境时 , 发现之前旧的环境还没有被删除时 , 将其删除 :
+
+.code ck-sysdeps-unix.c /ck_generate_runtime_dir_for_user_start OMIT/,/ck_generate_runtime_dir_for_user_end OMIT
+
+而且 , 删除的目录是用户的动态运行的临时目录 , 在目录在linux上就是
+`/var/run/user/<uid>` , 而我用来登录的uid为1000 , 所以动态运行的临时目录
+就是 `/var/run/user/1000` . 那我们手动调用 `ck-remove-directory` 来删除该目录 :
+
+.code corpus.txt 7,10
+
+原来是permission deny , 那我们来看看该目录的权限 :
+
+.code corpus.txt 12,13
+
+它的父目录的权限 :
+
+.code corpus.txt 15,16
+
+看来 , 的确时权限不够， `ck-remove-directory` 程序会以uid去删除该目录 . 
+通过查看consolekit的issue , 发现已经有人碰到了同样的问题 , 同时也提供了
+解决方法，
+具体可以参见这个[[https://github.com/ConsoleKit2/ConsoleKit2/pull/67][PR]].
+它的解决思路是以uid去删除 `/var/run/user/<uid>` 目录下的内容 , 然后再以调用
+该程序的用户 ( 通常是root ) 去删除 `/var/run/user/<uid>` 目录本身.
+
+* session hash table
+
+当consolekit占用100%cpu时 , 通过gdb看看它在做什么:
+
+.code corpus.txt 18,34
+
+通过查看代码 , 这里是从session hash table中删除对应的表项 . 
+
+也就是说hash表被破坏了， 而且出问题之前， 也有如下log :
+
+.code corpus.txt 36
+
+查看相关代码 ：
+
+.code ghash.c /g_hash_table_foreach_remove_or_steal_start OMIT/,/g_hash_table_foreach_remove_or_steal_end OMIT
+
+说明当删除hash表项时 , hash表发生了变化 . 
+可能出现该问题 , 有可能是多线程的问题 , 也就是说多个线程同时在操作同一个
+hash table . 通过查看代码 , 所有对该table的操作都在一个线程中 , 所以排除
+该可能性 . 
+
+通过在 `g_hash_table_foreach_remove_or_steal` 设置断点 , 出问题之前会有如下的
+call stack :
+
+.code corpus.txt 38,79
+
+原来 , 这里出现了recursive call !!!
+通过分析该部分代码 , 当从一个hash
+table删除一个session时，会执行一些其他废时操作 , 
+为了性能的考虑 , 在这些操作执行时 , 主线程仍然可以处理其他请求 , 
+所以当一个session还没有完全删除时 , 另一个session被删除了 ,
+这样， hash table有可能被resize , 那么就会触发之前的assertion . 
+那么， 原来的操作仍会使用已经被释放的hash table . 所以一些unexpected结果就会发生. 
+
+* conclusion
+
+为了防止recursive call， 解决方法是定义个标记， 如果发生了recursive call，之后的
+操作会被缓存起来， 最终由最开始的调用者完成这些被缓存的操作 , 具体参见该
+[[https://github.com/ConsoleKit2/ConsoleKit2/pull/81][PR]]. 问题解决 ! 
+
+FIN.
