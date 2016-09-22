@@ -94,8 +94,9 @@ table删除一个session时，会执行一些其他废时操作 ,
 
 * conclusion
 
-为了防止recursive call， 解决方法是定义个标记， 如果发生了recursive call，之后的
-操作会被缓存起来， 最终由最开始的调用者完成这些被缓存的操作 , 具体参见该
+为了防止recursive call， 解决的思路是先将从hash table中将相关的表项删除,
+将相关的清理操作放在之后执行， 这样即使出现了recursive call发生 , 
+对hash table的操作也不会被破坏 , 具体参见该
 [[https://github.com/ConsoleKit2/ConsoleKit2/pull/81][PR]]. 问题解决 ! 
 
 FIN.
