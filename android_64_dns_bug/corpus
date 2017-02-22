@@ -1,0 +1,152 @@
+game_stack_start OMIT
+I/Unity   ( 2451): LuaInterface.LuaException: No such host is known 
+I/Unity   ( 2451): stack traceback: 
+I/Unity   ( 2451):      [C]: in function 'ConnectUpdateServer' 
+I/Unity   ( 2451):      [string "_Logic/UpdateManager.lua"]: in function 'StartUpdateVersion' 
+I/Unity   ( 2451):      [string "Main.lua"]: in function <[string "Main.lua"]:0> 
+I/Unity   ( 2451): System.Net.Dns:hostent_to_IPHostEntry(String, String[], String[]) 
+I/Unity   ( 2451): System.Net.Dns:GetHostByName(String) 
+I/Unity   ( 2451): System.Net.Dns:GetHostEntry(String) 
+I/Unity   ( 2451): System.Net.Dns:GetHostAddresses(String) 
+I/Unity   ( 2451): ConnectUpdate:ConnectUpdateServer(String, Int32, Int32, Int32) 
+I/Unity   ( 2451): ConnectUpdateWrap:ConnectUpdateServer(IntPtr) 
+I/Unity   ( 2451): LuaInterface.LuaDLL:lua_pcall(IntPtr, Int32, Int32, Int32) 
+I/Unity   ( 2451): LuaInterface.LuaState:PCall(Int32, Int32) 
+I/Unity   ( 2451): LuaInterface.LuaFunction:PCall() 
+I/Unity   ( 2451): LuaInterface.LuaFunction:Call() 
+I/Unity   ( 2451): LuaFramework.LuaManager:StartMain() 
+I/Unity   ( 2451): LuaFramework.LuaManager:InitStart() 
+I/Unity   ( 2451): LuaFramework.GameManager:StartInGame() 
+I/Unity   ( 2451): LuaFramework.<OnExtractResource>c__Iterator0:MoveNext() 
+I/Unity   ( 2451): UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr) 
+game_stack_end OMIT
+
+netd_start OMIT
+struct addrinfo* result = NULL;
+uint32_t rv = android_getaddrinfofornet(mHost, mService, mHints, mNetId, mMark, &result);
+if (rv) {
+	// getaddrinfo failed
+	mClient->sendBinaryMsg(ResponseCode::DnsProxyOperationFailed, &rv, sizeof(rv));
+} else {
+	bool success = !mClient->sendCode(ResponseCode::DnsProxyQueryResult);
+	struct addrinfo* ai = result;
+	while (ai && success) {
+		success = sendLenAndData(mClient, sizeof(struct addrinfo), ai)
+			&& sendLenAndData(mClient, ai->ai_addrlen, ai->ai_addr)
+			&& sendLenAndData(mClient,
+							  ai->ai_canonname ? strlen(ai->ai_canonname) + 1 : 0,
+							  ai->ai_canonname);
+		ai = ai->ai_next;
+	}
+	success = success && sendLenAndData(mClient, 0, "");
+	if (!success) {
+		ALOGW("Error writing DNS result to client");
+	}
+}
+if (result) {
+	freeaddrinfo(result);
+}
+mClient->decRef();
+netd_end OMIT
+
+bionic_start OMIT
+...
+	char buf[4];
+	// read result code for gethostbyaddr
+	if (fread(buf, 1, sizeof(buf), proxy) != sizeof(buf)) {
+		goto exit;
+	}
+
+	int result_code = (int)strtol(buf, NULL, 10);
+	// verify the code itself
+	if (result_code != DnsProxyQueryResult ) {
+		fread(buf, 1, sizeof(buf), proxy);
+		goto exit;
+	}
+
+	struct addrinfo* ai = NULL;
+	struct addrinfo** nextres = res;
+	while (1) {
+		uint32_t addrinfo_len;
+		if (fread(&addrinfo_len, sizeof(addrinfo_len),
+			  1, proxy) != 1) {
+			break;
+		}
+		addrinfo_len = ntohl(addrinfo_len);
+		if (addrinfo_len == 0) {
+			success = 1;
+			break;
+		}
+
+		if (addrinfo_len < sizeof(struct addrinfo)) {
+			break;
+		}
+		struct addrinfo* ai = calloc(1, addrinfo_len +
+					     sizeof(struct sockaddr_storage));
+		if (ai == NULL) {
+			break;
+		}
+
+		if (fread(ai, addrinfo_len, 1, proxy) != 1) {
+			// Error; fall through.
+			break;
+		}
+
+		// Zero out the pointer fields we copied which aren't
+		// valid in this address space.
+		ai->ai_addr = NULL;
+		ai->ai_canonname = NULL;
+		ai->ai_next = NULL;
+
+		// struct sockaddr
+		uint32_t addr_len;
+		if (fread(&addr_len, sizeof(addr_len), 1, proxy) != 1) {
+			break;
+		}
+		addr_len = ntohl(addr_len);
+		if (addr_len != 0) {
+			if (addr_len > sizeof(struct sockaddr_storage)) {
+				// Bogus; too big.
+				break;
+			}
+			struct sockaddr* addr = (struct sockaddr*)(ai + 1);
+			if (fread(addr, addr_len, 1, proxy) != 1) {
+				break;
+			}
+			ai->ai_addr = addr;
+		}
+
+		// cannonname
+		uint32_t name_len;
+		if (fread(&name_len, sizeof(name_len), 1, proxy) != 1) {
+			break;
+		}
+		name_len = ntohl(name_len);
+		if (name_len != 0) {
+			ai->ai_canonname = (char*) malloc(name_len);
+			if (fread(ai->ai_canonname, name_len, 1, proxy) != 1) {
+				break;
+			}
+			if (ai->ai_canonname[name_len - 1] != '\0') {
+				// The proxy should be returning this
+				// NULL-terminated.
+				break;
+			}
+		}
+
+		*nextres = ai;
+		nextres = &ai->ai_next;
+		ai = NULL;
+	}
+...
+bionic_end OMIT
+
+sizeof_32_begin OMIT
+(gdb) p sizeof(struct addrinfo)
+$1 = 32
+sizeof_32_end OMIT
+
+sizeof_64_begin OMIT
+(gdb) p sizeof(struct addrinfo)
+$1 = 48
+sizeof_64_end OMIT
