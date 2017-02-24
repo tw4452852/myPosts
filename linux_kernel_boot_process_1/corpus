@@ -1,0 +1,332 @@
+bootsec_info_start OMIT
+Use a boot loader."
+
+Remove disk and press any key to reboot..."
+bootsec_info_end OMIT
+
+bootsec_ld_s OMIT
+// arch/x86/boot/setup.ld
+
+...
+SECTIONS
+{
+	. = 0;
+	.bstext		: { *(.bstext) }
+	.bsdata		: { *(.bsdata) }
+...
+bootsec_ld_e OMIT
+
+bootsec_code_1_s OMIT
+// arch/x86/boot/header.S
+
+.code16
+.section ".bstext", "ax"
+
+.global bootsect_start
+bootsect_start:
+	# Normalize the start address
+	ljmp	$BOOTSEG, $start2
+
+start2:
+	movw	%cs, %ax
+	movw	%ax, %ds
+	movw	%ax, %es
+	movw	%ax, %ss
+	xorw	%sp, %sp
+	sti
+bootsec_code_1_e OMIT
+
+bootsec_code_2_s OMIT
+	cld
+	movw	$bugger_off_msg, %si
+
+msg_loop:
+	lodsb
+	andb	%al, %al
+	jz	bs_die
+	movb	$0xe, %ah
+	movw	$7, %bx
+	int	$0x10
+	jmp	msg_loop
+
+...
+	.section ".bsdata", "a"
+bugger_off_msg:
+	.ascii	"Use a boot loader.\r\n"
+	.ascii	"\n"
+	.ascii	"Remove disk and press any key to reboot...\r\n"
+	.byte	0
+bootsec_code_2_e OMIT
+
+bootsec_code_3_s OMIT
+bs_die:
+	# Allow the user to press a key, then reboot
+	xorw	%ax, %ax
+	int	$0x16
+	int	$0x19
+
+	# int 0x19 should never return.  In case it does anyway,
+	# invoke the BIOS reset code...
+	ljmp	$0xf000,$0xfff0
+bootsec_code_3_e OMIT
+
+entry_code_1_s OMIT
+	.globl	_start
+_start:
+		# Explicitly enter this as bytes, or the assembler
+		# tries to generate a 3-byte jump here, which causes
+		# everything else to push off to the wrong offset.
+		.byte	0xeb		# short (2-byte) jump
+		.byte	start_of_setup-1f
+1:
+...
+entry_code_1_e OMIT
+
+entry_code_2_s OMIT
+...
+# End of setup header #####################################################
+
+	.section ".entrytext", "ax"
+start_of_setup:
+# Force %es = %ds
+	movw	%ds, %ax
+	movw	%ax, %es
+	cld
+entry_code_2_e OMIT
+
+entry_code_3_s OMIT
+movw	%ss, %dx
+cmpw	%ax, %dx	# %ds == %ss?
+movw	%sp, %dx
+je	2f		# -> assume %sp is reasonably set
+...
+2:	# Now %dx should point to the end of our stack space
+	andw	$~3, %dx	# dword align (might as well...)
+	jnz	3f
+	movw	$0xfffc, %dx	# Make sure we're not zero
+3:	movw	%ax, %ss
+	movzwl	%dx, %esp	# Clear upper half of %esp
+	sti			# Now we should have a working stack
+entry_code_3_e OMIT
+
+entry_code_4_s OMIT
+# Invalid %ss, make up a new stack
+movw	$_end, %dx
+testb	$CAN_USE_HEAP, loadflags
+jz	1f
+movw	heap_end_ptr, %dx
+1:	addw	$STACK_SIZE, %dx
+jnc	2f
+xorw	%dx, %dx	# Prevent wraparound
+entry_code_4_e OMIT
+
+loadflags_s OMIT
+Field name:	loadflags
+Type:		modify (obligatory)
+Offset/size:	0x211/1
+Protocol:	2.00+
+  This field is a bitmask.
+  ...
+  Bit 7 (write): CAN_USE_HEAP
+	Set this bit to 1 to indicate that the value entered in the
+	heap_end_ptr is valid.  If this field is clear, some setup code
+	functionality will be disabled.
+loadflags_e OMIT
+
+stack_1_s OMIT
++------------+<---- sp
+|            |
+|            |
+|  stack     |
+|            |
++------------+<---- _end
+|            |
+| setup code |
++------------+<---- ss
+stack_1_e OMIT
+
+stack_2_s OMIT
++------------+<---- sp = _end + STACK_SIZE
+|            |
+|            |
+|  stack     |
+|            |
++------------+<---- _end
+|            |
+| setup code |
++------------+<---- ss
+stack_2_e OMIT
+
+stack_3_s OMIT
++------------+<---- sp = heap_end_ptr + STACK_SIZE
+|            |
+|    stack   |
++------------+<---- heap_end_ptr
+|    heap    |
++------------+<---- _end
+|            |
+| setup code |
++------------+<---- ss
+stack_3_e OMIT
+
+entry_code_5_s OMIT
+# We will have entered with %cs = %ds+0x20, normalize %cs so
+# it is on par with the other segments.
+	pushw	%ds
+	pushw	$6f
+	lretw
+6:
+entry_code_5_e OMIT
+
+entry_code_6_s OMIT
+# Check signature at end of setup
+	cmpl	$0x5a5aaa55, setup_sig
+	jne	setup_bad
+entry_code_6_e OMIT
+
+entry_code_7_s OMIT
+# Zero the bss
+	movw	$__bss_start, %di
+	movw	$_end+3, %cx
+	xorl	%eax, %eax
+	subw	%di, %cx
+	shrw	$2, %cx
+	rep; stosl
+entry_code_7_e OMIT
+
+entry_code_8_s OMIT
+# Jump to C code (should not return)
+	calll	main
+entry_code_8_e OMIT
+
+c_1_s OMIT
+/* First, copy the boot header into the "zeropage" */
+copy_boot_params();
+c_1_e OMIT
+
+c_2_s OMIT
+char *HEAP = _end;
+char *heap_end = _end;		/* Default end of heap = no heap */
+
+static void init_heap(void)
+{
+	char *stack_end;
+
+	if (boot_params.hdr.loadflags & CAN_USE_HEAP) {
+		asm("leal %P1(%%esp),%0"
+		    : "=r" (stack_end) : "i" (-STACK_SIZE));
+
+		heap_end = (char *)
+			((size_t)boot_params.hdr.heap_end_ptr + 0x200);
+		if (heap_end > stack_end)
+			heap_end = stack_end;
+	} else {
+		/* Boot protocol 2.00 only, no heap available */
+		puts("WARNING: Ancient bootloader, some functionality "
+		     "may be limited!\n");
+	}
+}
+c_2_e OMIT
+
+c_3_s OMIT
+static inline bool heap_free(size_t n)
+{
+	return (int)(heap_end-HEAP) >= (int)n;
+}
+c_3_e OMIT
+
+c_4_s OMIT
+static inline char *__get_heap(size_t s, size_t a, size_t n)
+{
+	char *tmp;
+
+	HEAP = (char *)(((size_t)HEAP+(a-1)) & ~(a-1));
+	tmp = HEAP;
+	HEAP += s*n;
+	return tmp;
+}
+#define GET_HEAP(type, n) \
+	((type *)__get_heap(sizeof(type),__alignof__(type),(n)))
+c_4_e OMIT
+
+c_5_s OMIT
+#define RESET_HEAP() ((void *)( HEAP = _end ))
+c_5_e OMIT
+
+c_6_s OMIT
+RESET_HEAP()
+...
+if (!heap_free(size))
+	// no enough free space
+	...
+else
+	GET_HEAP(struct_a, number_of_struct_a)
+	...
+c_6_e OMIT
+
+c_7_s OMIT
+...
+protected_mode_jump(boot_params.hdr.code32_start,
+		(u32)&boot_params + (ds() << 4));
+c_7_e OMIT
+
+pm_1_s OMIT
+movl	%edx, %esi		# Pointer to boot_params table
+pm_1_e OMIT
+
+pm_2_s OMIT
+xorl	%ebx, %ebx
+movw	%cs, %bx
+shll	$4, %ebx
+addl	%ebx, 2f
+...
+2:	.long	in_pm32			# offset
+...
+	.code32
+	.section ".text32","ax"
+GLOBAL(in_pm32)
+pm_2_e OMIT
+
+pm_3_s OMIT
+movw	$__BOOT_DS, %cx
+movw	$__BOOT_TSS, %di
+pm_3_e OMIT
+
+pm_4_s OMIT
+movl	%cr0, %edx
+orb	$X86_CR0_PE, %dl	# Protected mode
+movl	%edx, %cr0
+pm_4_e OMIT
+
+pm_5_s OMIT
+# Transition to 32-bit mode
+.byte	0x66, 0xea		# ljmpl opcode
+2:	.long	in_pm32			# offset
+.word	__BOOT_CS		# segment
+pm_5_e OMIT
+
+pm_6_s OMIT
+# Set up data segments for flat 32-bit mode
+movl	%ecx, %ds
+movl	%ecx, %es
+movl	%ecx, %fs
+movl	%ecx, %gs
+movl	%ecx, %ss
+# The 32-bit code sets up its own stack, but this way we do have
+# a valid stack if some debugging hack wants to use it.
+addl	%ebx, %esp
+pm_6_e OMIT
+
+pm_7_s OMIT
+# Clear registers to allow for future extensions to the
+# 32-bit boot protocol
+xorl	%ecx, %ecx
+xorl	%edx, %edx
+xorl	%ebx, %ebx
+xorl	%ebp, %ebp
+xorl	%edi, %edi
+pm_7_e OMIT
+
+pm_8_s OMIT
+jmpl	*%eax			# Jump to the 32-bit entrypoint
+pm_8_e OMIT
