@@ -1,0 +1,190 @@
+uncompressed_1_s OMIT
+/* Set up the stack for verify_cpu(), similar to initial_stack below */
+leaq	(__end_init_task - SIZEOF_PTREGS)(%rip), %rsp
+
+/* Sanitize CPU configuration */
+call verify_cpu
+uncompressed_1_e OMIT
+
+uncompressed_2_s OMIT
+* We come here either directly from a 64bit bootloader, or from
+* arch/x86/boot/compressed/head_64.S.
+uncompressed_2_e OMIT
+
+uncompressed_3_s OMIT
+/*
+ * Compute the delta between the address I am compiled to run at and the
+ * address I am actually running at.
+ */
+leaq	_text(%rip), %rbp
+subq	$_text - __START_KERNEL_map, %rbp
+...
+#define __START_KERNEL_map 0xffffffff80000000
+uncompressed_3_e OMIT
+
+uncompressed_4_s OMIT
+SECTIONS
+{
+ . = (0xffffffff80000000 + ALIGN(0x1000000, 0x200000));
+ phys_startup_64 = ABSOLUTE(startup_64 - 0xffffffff80000000);
+ /* Text and read-only data */
+ .text : AT(ADDR(.text) - 0xffffffff80000000) {
+  _text = .;
+uncompressed_4_e OMIT
+
+uncompressed_5_s OMIT
+/* Is the address not 2M aligned? */
+testl	$~PMD_PAGE_MASK, %ebp
+jnz	bad_address
+
+/*
+ * Is the address too large?
+ */
+leaq	_text(%rip), %rax
+shrq	$MAX_PHYSMEM_BITS, %rax
+jnz	bad_address
+uncompressed_5_e OMIT
+
+uncompressed_6_s OMIT
+NEXT_PAGE(early_level4_pgt)
+	.fill	511,8,0
+	.quad	level3_kernel_pgt - __START_KERNEL_map + _PAGE_TABLE
+NEXT_PAGE(level3_kernel_pgt)
+	.fill	L3_START_KERNEL,8,0
+	.quad	level2_kernel_pgt - __START_KERNEL_map + _KERNPG_TABLE
+	.quad	level2_fixmap_pgt - __START_KERNEL_map + _PAGE_TABLE
+NEXT_PAGE(level2_kernel_pgt)
+	PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
+		KERNEL_IMAGE_SIZE/PMD_SIZE)
+NEXT_PAGE(level2_fixmap_pgt)
+	.fill	506,8,0
+	.quad	level1_fixmap_pgt - __START_KERNEL_map + _PAGE_TABLE
+	/* 8MB reserved for vsyscalls + a 2MB hole = 4 + 1 entries */
+	.fill	5,8,0
+NEXT_PAGE(level1_fixmap_pgt)
+	.fill	512,8,0
+...
+#define KERNEL_IMAGE_SIZE	(512 * 1024 * 1024)
+#define PMDS(START, PERM, COUNT)			\
+	i = 0 ;						\
+	.rept (COUNT) ;					\
+	.quad	(START) + (i << PMD_SHIFT) + (PERM) ;	\
+	i = i + 1 ;					\
+	.endr
+uncompressed_6_e OMIT
+
+uncompressed_7_s OMIT
+/*
+ * Fixup the physical addresses in the page table
+ */
+addq	%rbp, early_level4_pgt + (L4_START_KERNEL*8)(%rip)
+addq	%rbp, level3_kernel_pgt + (510*8)(%rip)
+addq	%rbp, level3_kernel_pgt + (511*8)(%rip)
+addq	%rbp, level2_fixmap_pgt + (506*8)(%rip)
+uncompressed_7_e OMIT
+
+uncompressed_8_s OMIT
+/*
+ * Set up the identity mapping for the switchover.  These
+ * entries should *NOT* have the global bit set!  This also
+ * creates a bunch of nonsense entries but that is fine --
+ * it avoids problems around wraparound.
+ */
+leaq	_text(%rip), %rdi
+leaq	early_level4_pgt(%rip), %rbx
+movq	%rdi, %rax
+shrq	$PGDIR_SHIFT, %rax
+leaq	(PAGE_SIZE + _KERNPG_TABLE)(%rbx), %rdx
+movq	%rdx, 0(%rbx,%rax,8)
+movq	%rdx, 8(%rbx,%rax,8)
+addq	$PAGE_SIZE, %rdx
+movq	%rdi, %rax
+shrq	$PUD_SHIFT, %rax
+andl	$(PTRS_PER_PUD-1), %eax
+movq	%rdx, PAGE_SIZE(%rbx,%rax,8)
+incl	%eax
+andl	$(PTRS_PER_PUD-1), %eax
+movq	%rdx, PAGE_SIZE(%rbx,%rax,8)
+addq	$PAGE_SIZE * 2, %rbx
+movq	%rdi, %rax
+shrq	$PMD_SHIFT, %rdi
+addq	$(__PAGE_KERNEL_LARGE_EXEC & ~_PAGE_GLOBAL), %rax
+leaq	(_end - 1)(%rip), %rcx
+shrq	$PMD_SHIFT, %rcx
+subq	%rdi, %rcx
+incl	%ecx
+1:
+andq	$(PTRS_PER_PMD - 1), %rdi
+movq	%rax, (%rbx,%rdi,8)
+incq	%rdi
+addq	$PMD_SIZE, %rax
+decl	%ecx
+jnz	1b
+uncompressed_8_e OMIT
+
+uncompressed_9_s OMIT
+leaq	level2_kernel_pgt(%rip), %rdi
+leaq	PAGE_SIZE(%rdi), %r8
+/* See if it is a valid page table entry */
+1:	testb	$_PAGE_PRESENT, 0(%rdi)
+jz	2f
+addq	%rbp, 0(%rdi)
+/* Go to the next page */
+2:	addq	$8, %rdi
+cmp	%r8, %rdi
+jne	1b
+uncompressed_9_e OMIT
+
+mm_s OMIT
+        physical address           virtual address
+          +-------+                 +-------+
+          |       |                 |       |
+          |       |     +-----------+-------+ 0xffffffff80000000+512M
+     512M +-------+<----+           |       |
+          |       |                 |       |
+          |       |     +-----------+-------+ 0xffffffff80000000
+          |       |     |           |       |
+          |       |     |           |       |
+          |       |     |           |       |
+          |       |     |           |       |
+     _end +-------+<----+-----------+-------+ _end
+          | kernel|     |           |       |
+          | image |     |           |       |
+0x1000000 +-------+<----+-----------+-------+ 0x1000000
+          |       |     |           |       |
+          |       |     |           |       |
+          |       |     |           |       |
+          |       |     |           |       |
+      0x0 +-------+<----+           +-------+
+mm_e OMIT
+
+uncompressed_10_s OMIT
+	movq	$(early_level4_pgt - __START_KERNEL_map), %rax
+	jmp 1f
+...
+1:
+	/* Enable PAE mode and PGE */
+	movl	$(X86_CR4_PAE | X86_CR4_PGE), %ecx
+	movq	%rcx, %cr4
+
+	/* Setup early boot stage 4 level pagetables. */
+	addq	phys_base(%rip), %rax
+	movq	%rax, %cr3
+uncompressed_10_e OMIT
+
+uncompressed_11_s OMIT
+	/* Ensure I am executing from virtual addresses */
+	movq	$1f, %rax
+	jmp	*%rax
+1:
+uncompressed_11_e OMIT
+
+uncompressed_12_s OMIT
+	movq	initial_code(%rip), %rax
+	pushq	$__KERNEL_CS	# set correct cs
+	pushq	%rax		# target address in negative space
+	lretq
+	...
+	GLOBAL(initial_code)
+	.quad	x86_64_start_kernel
+uncompressed_12_e OMIT
