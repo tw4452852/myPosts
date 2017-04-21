@@ -1,0 +1,11 @@
+digraph t {
+	t [shape = "plaintext", label = <
+	<table cellspacing="0" border="0" cellborder="1">
+	<tr>
+	<td bgcolor="skyblue" port="wn">waiter number<br/>30 bits</td>
+	<td bgcolor="gray" port="bw">be woken?<br/>1 bit</td>
+	<td bgcolor="pink" port="lu">lock/unlock<br/>1 bit</td>
+	</tr>
+	</table>>];
+
+}
