@@ -1,0 +1,288 @@
+debug_obj_s OMIT
+/**
+ * struct debug_obj - representaion of an tracked object
+ * @node:	hlist node to link the object into the tracker list
+ * @state:	tracked object state
+ * @astate:	current active state
+ * @object:	pointer to the real object
+ * @descr:	pointer to an object type specific debug description structure
+ */
+struct debug_obj {
+    struct hlist_node	node;
+    enum debug_obj_state	state;
+    unsigned int		astate;
+    void			*object;
+    struct debug_obj_descr	*descr;
+};
+debug_obj_e OMIT
+
+obj_hash_s OMIT
+struct debug_bucket {
+    struct hlist_head	list;
+    raw_spinlock_t		lock;
+};
+
+#define ODEBUG_HASH_BITS	14
+#define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
+static struct debug_bucket	obj_hash[ODEBUG_HASH_SIZE];
+obj_hash_e OMIT
+
+hash_key_s OMIT
+#define ODEBUG_CHUNK_SHIFT	PAGE_SHIFT
+static struct debug_bucket *get_bucket(unsigned long addr)
+{
+    unsigned long hash;
+
+    hash = hash_long((addr >> ODEBUG_CHUNK_SHIFT), ODEBUG_HASH_BITS);
+    return &obj_hash[hash];
+}
+hash_key_e OMIT
+
+1s OMIT
+#define ODEBUG_POOL_SIZE	1024
+#define ODEBUG_POOL_MIN_LEVEL	256
+static DEFINE_RAW_SPINLOCK(pool_lock);
+static HLIST_HEAD(obj_pool);
+1e OMIT
+
+2s OMIT
+static void free_obj_work(struct work_struct *work);
+static DECLARE_WORK(debug_obj_work, free_obj_work);
+static void free_obj_work(struct work_struct *work)
+{
+	struct debug_obj *obj;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&pool_lock, flags);
+	while (obj_pool_free > ODEBUG_POOL_SIZE) {
+		obj = hlist_entry(obj_pool.first, typeof(*obj), node);
+		hlist_del(&obj->node);
+		obj_pool_free--;
+		/*
+		 * We release pool_lock across kmem_cache_free() to
+		 * avoid contention on pool_lock.
+		 */
+		raw_spin_unlock_irqrestore(&pool_lock, flags);
+		kmem_cache_free(obj_cache, obj);
+		raw_spin_lock_irqsave(&pool_lock, flags);
+	}
+	raw_spin_unlock_irqrestore(&pool_lock, flags);
+}
+
+static void free_object(struct debug_obj *obj)
+{
+    ...
+	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
+		sched = 1;
+	...
+	if (sched)
+		schedule_work(&debug_obj_work);
+}
+2e OMIT
+
+3s OMIT
+static void fill_pool(void)
+{
+    ...
+    while (obj_pool_free < ODEBUG_POOL_MIN_LEVEL) {
+
+        new = kmem_cache_zalloc(obj_cache, gfp);
+        if (!new)
+            return;
+
+        raw_spin_lock_irqsave(&pool_lock, flags);
+        hlist_add_head(&new->node, &obj_pool);
+        obj_pool_free++;
+        raw_spin_unlock_irqrestore(&pool_lock, flags);
+    }
+}
+
+static void
+__debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
+{
+    ...
+	fill_pool();
+    ...
+	obj = lookup_object(addr, db);
+	if (!obj) {
+		obj = alloc_object(addr, db, descr);
+    ...
+}
+3e OMIT
+
+4s OMIT
+asmlinkage __visible void __init start_kernel(void)
+{
+    ...
+	debug_objects_early_init();
+    ...
+	debug_objects_mem_init();
+    ...
+}
+
+static struct debug_obj		obj_static_pool[ODEBUG_POOL_SIZE] __initdata;
+
+void __init debug_objects_early_init(void)
+{
+	int i;
+
+	for (i = 0; i < ODEBUG_HASH_SIZE; i++)
+		raw_spin_lock_init(&obj_hash[i].lock);
+
+	for (i = 0; i < ODEBUG_POOL_SIZE; i++)
+		hlist_add_head(&obj_static_pool[i].node, &obj_pool);
+}
+
+void __init debug_objects_mem_init(void)
+{
+	obj_cache = kmem_cache_create("debug_objects_cache",
+				      sizeof (struct debug_obj), 0,
+				      SLAB_DEBUG_OBJECTS, NULL);
+
+	if (!obj_cache || debug_objects_replace_static_objects()) {
+		debug_objects_enabled = 0;
+		if (obj_cache)
+			kmem_cache_destroy(obj_cache);
+		pr_warn("out of memory.\n");
+	} else
+		...
+}
+4e OMIT
+
+5s OMIT
+HLIST_HEAD(objects);
+
+for (i = 0; i < ODEBUG_POOL_SIZE; i++) {
+    obj = kmem_cache_zalloc(obj_cache, GFP_KERNEL);
+    if (!obj)
+        goto free;
+    hlist_add_head(&obj->node, &objects);
+}
+5e OMIT
+
+6s OMIT
+/* Remove the statically allocated objects from the pool */
+hlist_for_each_entry_safe(obj, tmp, &obj_pool, node)
+    hlist_del(&obj->node);
+/* Move the allocated objects to the pool */
+hlist_move_list(&objects, &obj_pool);
+6e OMIT
+
+7s OMIT
+/* Replace the active object references */
+struct debug_bucket *db = obj_hash;
+for (i = 0; i < ODEBUG_HASH_SIZE; i++, db++) {
+    hlist_move_list(&db->list, &objects);
+
+    hlist_for_each_entry(obj, &objects, node) {
+        new = hlist_entry(obj_pool.first, typeof(*obj), node);
+        hlist_del(&new->node);
+        /* copy object data */
+        *new = *obj;
+        hlist_add_head(&new->node, &db->list);
+        cnt++;
+    }
+}
+7e OMIT
+
+8s OMIT
+typedef struct test_obj {
+    int i;
+} test_obj_s;
+
+struct test_obj *s = kmalloc(sizeof(*s), GFP_KERNEL);
+
+if (!s) {
+    pr_err("oom !\n");
+    return -1;
+}
+debug_object_init(s, &test_obj_debug_descr);
+debug_object_activate(s, &test_obj_debug_descr);
+
+/* free a active object */
+kfree(s);
+8e OMIT
+
+9s OMIT
+/**
+ * struct debug_obj_descr - object type specific debug description structure
+ *
+ * @name:		name of the object typee
+ * @debug_hint:		function returning address, which have associated
+ *			kernel symbol, to allow identify the object
+ * @is_static_object:	return true if the obj is static, otherwise return false
+ * @fixup_init:		fixup function, which is called when the init check
+ *			fails. All fixup functions must return true if fixup
+ *			was successful, otherwise return false
+ * @fixup_activate:	fixup function, which is called when the activate check
+ *			fails
+ * @fixup_destroy:	fixup function, which is called when the destroy check
+ *			fails
+ * @fixup_free:		fixup function, which is called when the free check
+ *			fails
+ * @fixup_assert_init:  fixup function, which is called when the assert_init
+ *			check fails
+ */
+struct debug_obj_descr {
+    const char		*name;
+    void *(*debug_hint)(void *addr);
+    bool (*is_static_object)(void *addr);
+    bool (*fixup_init)(void *addr, enum debug_obj_state state);
+    bool (*fixup_activate)(void *addr, enum debug_obj_state state);
+    bool (*fixup_destroy)(void *addr, enum debug_obj_state state);
+    bool (*fixup_free)(void *addr, enum debug_obj_state state);
+    bool (*fixup_assert_init)(void *addr, enum debug_obj_state state);
+};
+9e OMIT
+
+10s OMIT
+static bool
+test_obj_fixup_free(void *addr, enum debug_obj_state state)
+{
+    pr_err("%s: state[%#x], addr[%p]\n", __func__, state, addr);
+    debug_object_deactivate(addr, &test_obj_debug_descr);
+    return false;
+}
+
+static struct debug_obj_descr test_obj_debug_descr = {
+    .name = "test obj",
+    .fixup_free = test_obj_fixup_free,
+};
+10e OMIT
+
+11s OMIT
+WARNING: CPU: 0 PID: 30 at lib/debugobjects.c:263 debug_print_object+0x85/0xa0
+ODEBUG: free active (active state 0) object type: test obj hint: 0xffff8a3f45739328
+Modules linked in: tm(+)
+CPU: 0 PID: 30 Comm: modprobe Not tainted 4.10.0-rc6-g79c9089-dirty #29
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.8.1-0-g4adadbd-20150316_085822-nilsson.home.kraxel.org 04/01/2014
+Call Trace:
+ dump_stack+0x19/0x1d
+ __warn+0xc5/0xe0
+ warn_slowpath_fmt+0x4a/0x50
+ ? put_dec+0x1a/0x80
+ debug_print_object+0x85/0xa0
+ debug_check_no_obj_freed+0x190/0x1c0
+ ? init_tw+0x57/0x6a [tm]
+ kfree+0xcf/0x120
+ ? 0xffffffffc007f000
+ init_tw+0x57/0x6a [tm]
+ do_one_initcall+0x3e/0x170
+ ? __vunmap+0xa6/0xf0
+ ? kfree+0xcf/0x120
+ do_init_module+0x55/0x1c4
+ load_module+0x1da2/0x2190
+ ? __symbol_get+0x60/0x60
+ ? kernel_read+0x3b/0x50
+ SyS_finit_module+0xa0/0xb0
+ entry_SYSCALL_64_fastpath+0x13/0x93
+RIP: 0033:0x496559
+RSP: 002b:00007ffc7a53f768 EFLAGS: 00000246 ORIG_RAX: 0000000000000139
+RAX: ffffffffffffffda RBX: 0000000000859e00 RCX: 0000000000496559
+RDX: 0000000000000000 RSI: 0000000000632f11 RDI: 0000000000000008
+RBP: 00007f2f436ea010 R08: 000000000084ab98 R09: 7fffffffffffffff
+R10: 0000000000000030 R11: 0000000000000246 R12: 00007ffc7a53f760
+R13: 0000000000871fc2 R14: 00007f2f43705010 R15: 00007ffc7a541f9d
+---[ end trace 34366a9b991a12f7 ]---
+test_obj_fixup_free: state[0x3], addr[ffff8a3f45739328]
+11e OMIT

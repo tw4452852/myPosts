@@ -1,0 +1,22 @@
+digraph mheap {
+	rankdir = "LR";
+	mh [shape = "plaintext", label = <
+	<table>
+	<tr>
+	<td port="large">large list</td>
+	</tr>
+	<tr>
+	<td port="free">free list</td>
+	</tr>
+	</table>
+	>];
+
+	fl [shape = "record", label = "<b1> | <b2> | <b3> | <b4>... | <bn>"];
+
+	node [shape = "Mrecord", style = "filled", fillcolor = "skyblue", label = "span"];
+	mh:large -> s1 -> s2 -> s3;
+	mh:free -> fl:b1 -> s4;
+	fl:b2 -> s5 -> s6;
+	fl:b3 -> s7 -> s8 -> s9;
+	fl:bn -> s10;
+}
