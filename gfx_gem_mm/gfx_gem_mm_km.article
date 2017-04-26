@@ -4,7 +4,7 @@ Tags: linux, kernel, drm, gfx, i915, gem
 
 * 简介
 
-[[/posts/DRM_Memory_Ranger_Allocator][上一篇]]我们说过了 `drm_mm` ,
+[[/post?q=DRM_Memory_Ranger_Allocator][上一篇]]我们说过了 `drm_mm` ,
 这里主要针对 `gem` 中对 `gtt` 地址空间的管理.
 这里主要分用户空间和内核空间, 这里我们首先来看下内核空间是如何管理 `gtt` 空间的,
 以及它提供给用户空间的接口.

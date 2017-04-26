@@ -141,7 +141,7 @@ linux为我们在此基础上又做了一次抽象,
 同样,在 `/sys/bus/` 目录下会生成一个platform的目录
 
 下面是 `platform_device` 的注册,
-那拿[[/posts/Linux_LCD_driver][之前一篇文章]]中的lcd设备为例,
+那拿[[/post?q=Linux_LCD_driver][之前一篇文章]]中的lcd设备为例,
 其实它便是一个 `platform_device` 设备.
 
 .code ../lcd/devs.c 850,859

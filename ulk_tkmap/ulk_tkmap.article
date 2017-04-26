@@ -4,7 +4,7 @@ Tags: linux, kernel
 
 * 简介
 
-本篇紧接着[[/posts/Permanent_kernel_mapping][上一篇]],
+本篇紧接着[[/post?q=Permanent_kernel_mapping][上一篇]],
 继续讲解kernel中对高端内存访问的第二种技术:
 Temporary mapping.
 

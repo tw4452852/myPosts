@@ -4,7 +4,7 @@ Tags: linux, kernel
 
 * 简介
 
-之前我们说过了[[/posts/Memory_Addressing][内存编址]],
+之前我们说过了[[/post?q=Memory_Addressing][内存编址]],
 从中我们知道了,物理地址的最小单位为一个物理页,
 大小是4k(小页)/4M(大页)/2M(PAE使能),
 那么今天我们来说说在linux kernel中对物理页帧是如何管理的.

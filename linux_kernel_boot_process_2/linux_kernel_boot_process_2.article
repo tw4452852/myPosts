@@ -4,7 +4,7 @@ Tags: linux, kernel
 
 * background
 
-这里继续[[/posts/Linux_kernel_boot_process_-_part_1][上一篇]]
+这里继续[[/post?q=Linux_kernel_boot_process_-_part_1][上一篇]]
 分析kernel从protect mode到long mode的过程.
 
 在开始之前 , 有必要了解下kernel被bootloader加载到内存的位置 : 

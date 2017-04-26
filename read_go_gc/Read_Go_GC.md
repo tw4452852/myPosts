@@ -1,6 +1,6 @@
 Read Go - GC | 2013-04-08 | go
 
-这篇文章继上篇[Read Go - memory](/posts/Read_Go_-_Memory),
+这篇文章继上篇[Read Go - memory](/post?q=Read_Go_-_Memory),
 主要讲下垃圾回收的机制，过程中会涉及到go的type系统以及线程调度相关内容,
 在此就不对其进行深入的分析，等到后续的有针对性的深入的讲解。
 

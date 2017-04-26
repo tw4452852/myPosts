@@ -4,7 +4,7 @@ Tags: linux, drm, gfx, i915, gem
 
 * 简介
 
-这篇主要针对[[/posts/GEM_Memory_Address_Management_-_Kernel_Mode][上一篇]]
+这篇主要针对[[/post?q=GEM_Memory_Address_Management_-_Kernel_Mode][上一篇]]
 所讲的 `kernel` 提供给用户层提供的两个接口,
 来分析下用户空间对 `buffer` 的管理,
 这里以 `intel` 实现的 `buffer-manager` 为例子, 以下简称 `bufmgr` .

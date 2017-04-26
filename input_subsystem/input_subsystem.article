@@ -4,7 +4,7 @@ Tags: linux, kernel, driver
 
 * 简介
 
-本文接着[[/posts/Linux_Touch_Screen_driver][上一篇文章]]讲述linux中的输入子系统, Input subsystem 旨在统一各式各样的输入设备,
+本文接着[[/post?q=Linux_Touch_Screen_driver][上一篇文章]]讲述linux中的输入子系统, Input subsystem 旨在统一各式各样的输入设备,
 起着承上启下的作用,对底层设备驱动层和上层用户层提供统一的访问借口,
 下面来看下整体的框架:
 
@@ -16,7 +16,7 @@ Tags: linux, kernel, driver
 - 输入子系统: 转发相应的输入事件给感兴趣的接收程序
 - 事件处理层: 对收到的事件进行处理,例如转发给用户态程序,或者转发给其他接受模块
 
-设备驱动层在[[/posts/Linux_Touch_Screen_driver][上一篇文章]]已经讲过了,
+设备驱动层在[[/post?q=Linux_Touch_Screen_driver][上一篇文章]]已经讲过了,
 这里采用从下到上的方式,主要分析后面两层.
 
 * 输入子系统
@@ -45,7 +45,7 @@ Tags: linux, kernel, driver
 
 ** 事件传递
 
-下面我们通过一个实例来了解事件是如何传递的,这里就拿[[/post/Linux_Touch_Screen_driver][上一篇文章]]中,
+下面我们通过一个实例来了解事件是如何传递的,这里就拿[[/post?q=Linux_Touch_Screen_driver][上一篇文章]]中,
 当在触摸屏上按下时,产生的事件来说.
 
 首先是设备驱动层向输入子系统报告按键事件: `input_report_key(ts.input,`BTN_TOUCH,`1)`
