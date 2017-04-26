@@ -6,7 +6,7 @@ introduce this framework firstly.If you are the newbie, here is the
 introduce the router of it.
 
 [revel_github]:https://github.com/robfig/revel
-[revel_tuto]:http://rofig.github.com/revel/tutorial/index.html
+[revel_tuto]:http://revel.github.io/tutorial/index.html
 
 ## Introduce
 As a web framework, the router is necessary. It handles all kinds of URLs and
