@@ -1,0 +1,23 @@
+binary_code_s OMIT
+const volatile static char version[] __attribute__((used)) = VERSION;
+int main(int argc, char **argv)
+{
+	...
+	if argv contains "-v"
+		print version
+	...
+}
+binary_code_e OMIT
+
+android_mk_1_s OMIT
+git_reversion := $(shell git -C $(LOCAL_PATH) rev-parse HEAD)
+git_workdirty := $(shell git -C $(LOCAL_PATH) diff --quiet HEAD && echo "clean")
+LOCAL_CFLAGS += -DVERSION='"$(git_reversion)-$(git_workdirty)"'
+android_mk_1_e OMIT
+
+android_mk_2_s OMIT
+LOCAL_MODULE_CLASS := EXECUTABLES
+LOCAL_MODULE:= module_name
+# always build fbvncserver.c for version update
+$(local-intermediates-dir)/xxx.o: FORCE
+android_mk_2_e OMIT
