@@ -36,7 +36,7 @@ memory的读写效率会很高,这里 `slub` 抽象出了这个概念,在代码�
 
 ** kmem_cache
 
-`kmem_cache` 是从[[/posts/Memory_Area_Management_-_The_Slab_Allocator][slab]]
+`kmem_cache` 是从[[/post?q=Memory_Area_Management_-_The_Slab_Allocator][slab]]
 中引入的概念,我们来看 `slub` 是如何实现它的:
 
 .code slub_def.h 107,129

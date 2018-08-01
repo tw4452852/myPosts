@@ -154,7 +154,7 @@ slab释放的流程比较简单,释放物理页,
 维护一个自己的本地缓存,俗称 `slab` `local` `cache`.
 大部分的 `object` 的申请和释放只会影响本地缓存,
 只有当本地缓存为空或者溢出时,才会牵扯到slab allocator.
-(这里的技术和[[/posts/The_Per-CPU_Page_Frame_Cache][上一篇]]
+(这里的技术和[[/post?q=The_Per-CPU_Page_Frame_Cache][上一篇]]
 有异曲同工之处)
 
 其中每个cpu的本地缓存由 `struct` `array_cache` 描述:

@@ -2,7 +2,7 @@
 
 [原文在此](https://docs.google.com/document/d/163LwGViH_RSv5YEHmwixBJEjOOi3LYJbMhKY7sq3z1Q/edit?usp=sharing)
 
-官方的[Go Memory Model](golang.org/ref/mm)(以下简称MM)
+官方的[Go Memory Model](https://golang.org/ref/mem)(以下简称MM)
 是一篇描述关于Go内存访问和goroutine通信中语言内建为你保证的相关内容.
 但是,这是一个非常技术性的话题,有必要对它进行深入的理解.
 在这篇文档中,我将尝试提炼出一些收获,

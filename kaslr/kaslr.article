@@ -92,7 +92,7 @@ kaslr 在解压kernel到内存之前会随机选择大小合适的物理地址 ,
 
 * identity map
 
-从 [[/posts/Linux_kernel_boot_process_-_part_2][之前分析x86_64启动过程]]
+从 [[/post?q=Linux_kernel_boot_process_-_part_2][之前分析x86_64启动过程]]
 可知，在进入保护模式之后我们只映射了0到4G的地址空间,
 那么, 我们这里随机选择的地址可能还没有映射 ,
 所以 , 这里还需要建立对应的页表 , 是decompress code可以访问这些内存地址 . 

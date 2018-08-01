@@ -1,0 +1,331 @@
+c1s OMIT
+static int __init i2c_init(void)
+{
+	...
+	retval = bus_register(&i2c_bus_type);
+	...
+}
+postcore_initcall(i2c_init);
+c1e OMIT
+
+c2s OMIT
+struct bus_type i2c_bus_type = {
+	.name		= "i2c",
+	.match		= i2c_device_match,
+	.probe		= i2c_device_probe,
+	.remove		= i2c_device_remove,
+	.shutdown	= i2c_device_shutdown,
+};
+c2e OMIT
+
+c3s OMIT
+static int i2c_device_match(struct device *dev, struct device_driver *drv)
+{
+	...
+
+	/* Attempt an OF style match */
+	if (of_driver_match_device(dev, drv))
+		return 1;
+
+	/* Then ACPI style match */
+	if (acpi_driver_match_device(dev, drv))
+		return 1;
+
+	driver = to_i2c_driver(drv);
+	/* match on an id table if there is one */
+	if (driver->id_table)
+		return i2c_match_id(driver->id_table, client) != NULL;
+
+	return 0;
+}
+c3e OMIT
+
+c4s OMIT
+static int i2c_device_probe(struct device *dev)
+{
+	...
+
+	if (!device_can_wakeup(&client->dev))
+		device_init_wakeup(&client->dev,
+					client->flags & I2C_CLIENT_WAKE);
+	dev_dbg(dev, "probe\n");
+
+	status = of_clk_set_defaults(dev->of_node, false);
+	if (status < 0)
+		return status;
+
+	status = dev_pm_domain_attach(&client->dev, true);
+	if (status != -EPROBE_DEFER) {
+		status = driver->probe(client, i2c_match_id(driver->id_table,
+					client));
+		if (status)
+			dev_pm_domain_detach(&client->dev, true);
+	}
+
+	return status;
+}
+c4e OMIT
+
+c5s OMIT
+static const struct i2c_device_id dummy_id[] = {
+	{ "dummy", 0 },
+	{ },
+};
+
+static int dummy_probe(struct i2c_client *client,
+			   const struct i2c_device_id *id)
+{
+	return 0;
+}
+
+static int dummy_remove(struct i2c_client *client)
+{
+	return 0;
+}
+
+static struct i2c_driver dummy_driver = {
+	.driver.name	= "dummy",
+	.probe		= dummy_probe,
+	.remove		= dummy_remove,
+	.id_table	= dummy_id,
+};
+c5e OMIT
+
+c6s OMIT
+struct i2c_client *i2c_new_dummy(struct i2c_adapter *adapter, u16 address)
+{
+	struct i2c_board_info info = {
+		I2C_BOARD_INFO("dummy", address),
+	};
+
+	return i2c_new_device(adapter, &info);
+}
+EXPORT_SYMBOL_GPL(i2c_new_dummy);
+c6e OMIT
+
+c7s OMIT
+struct i2c_adapter {
+	...
+	const struct i2c_algorithm *algo; /* the algorithm to access the bus */
+	void *algo_data;
+
+	...
+	int timeout;			/* in jiffies */
+	int retries;
+	struct device dev;		/* the adapter device */
+
+	int nr;
+	...
+};
+c7e OMIT
+
+c8s OMIT
+dev_set_name(&adap->dev, "i2c-%d", adap->nr);
+adap->dev.bus = &i2c_bus_type;
+adap->dev.type = &i2c_adapter_type;
+res = device_register(&adap->dev);
+c8e OMIT
+
+c9s OMIT
+static struct attribute *i2c_adapter_attrs[] = {
+	&dev_attr_name.attr,
+	&dev_attr_new_device.attr,
+	&dev_attr_delete_device.attr,
+	NULL
+};
+ATTRIBUTE_GROUPS(i2c_adapter);
+
+struct device_type i2c_adapter_type = {
+	.groups		= i2c_adapter_groups,
+	.release	= i2c_adapter_dev_release,
+};
+c9e OMIT
+
+c10s OMIT
+struct i2c_client {
+	unsigned short flags;		/* div., see below		*/
+	unsigned short addr;		/* chip address - NOTE: 7bit	*/
+	char name[I2C_NAME_SIZE];
+	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
+	struct device dev;		/* the device structure		*/
+	int irq;			/* irq issued by device		*/
+	...
+};
+c10e OMIT
+
+c11s OMIT
+struct i2c_client *
+i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+c11e OMIT
+
+c12s OMIT
+struct i2c_board_info {
+	char		type[I2C_NAME_SIZE];
+	unsigned short	flags;
+	unsigned short	addr;
+	void		*platform_data;
+	struct dev_archdata	*archdata;
+	struct device_node *of_node;
+	struct fwnode_handle *fwnode;
+	int		irq;
+};
+c12e OMIT
+
+c13s OMIT
+client->dev.parent = &client->adapter->dev;
+client->dev.bus = &i2c_bus_type;
+client->dev.type = &i2c_client_type;
+client->dev.of_node = info->of_node;
+client->dev.fwnode = info->fwnode;
+
+i2c_dev_set_name(adap, client);
+status = device_register(&client->dev);
+c13e OMIT
+
+c14s OMIT
+dev_set_name(&client->dev, "%d-%04x", i2c_adapter_id(adap),
+		 client->addr | ((client->flags & I2C_CLIENT_TEN)
+				 ? 0xa000 : 0));
+c14e OMIT
+
+c15s OMIT
+static const unsigned short scan_addresses[] = {
+	addr1, addr2, addr3,
+	I2C_CLIENT_END
+};
+c15e OMIT
+
+c16s OMIT
+struct i2c_client *
+i2c_new_probed_device(struct i2c_adapter *adap,
+			  struct i2c_board_info *info,
+			  unsigned short const *addr_list,
+			  int (*probe)(struct i2c_adapter *, unsigned short addr))
+c16e OMIT
+
+c17s OMIT
+struct i2c_client *
+i2c_new_probed_device(struct i2c_adapter *adap,
+			  struct i2c_board_info *info,
+			  unsigned short const *addr_list,
+			  int (*probe)(struct i2c_adapter *, unsigned short addr))
+{
+	int i;
+
+	if (!probe)
+		probe = i2c_default_probe;
+
+	for (i = 0; addr_list[i] != I2C_CLIENT_END; i++) {
+		/* Check address validity */
+		if (i2c_check_addr_validity(addr_list[i]) < 0) {
+			dev_warn(&adap->dev, "Invalid 7-bit address "
+				 "0x%02x\n", addr_list[i]);
+			continue;
+		}
+
+		/* Check address availability */
+		if (i2c_check_addr_busy(adap, addr_list[i])) {
+			dev_dbg(&adap->dev, "Address 0x%02x already in "
+				"use, not probing\n", addr_list[i]);
+			continue;
+		}
+
+		/* Test address responsiveness */
+		if (probe(adap, addr_list[i]))
+			break;
+	}
+
+	if (addr_list[i] == I2C_CLIENT_END) {
+		dev_dbg(&adap->dev, "Probing failed, no device found\n");
+		return NULL;
+	}
+
+	info->addr = addr_list[i];
+	return i2c_new_device(adap, info);
+}
+c17e OMIT
+
+c18s OMIT
+i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count)
+{
+	struct i2c_adapter *adap = to_i2c_adapter(dev);
+	struct i2c_board_info info;
+	struct i2c_client *client;
+	char *blank, end;
+	int res;
+
+	memset(&info, 0, sizeof(struct i2c_board_info));
+
+	blank = strchr(buf, ' ');
+	...
+	memcpy(info.type, buf, blank - buf);
+
+	/* Parse remaining parameters, reject extra parameters */
+	res = sscanf(++blank, "%hi%c", &info.addr, &end);
+	...
+	client = i2c_new_device(adap, &info);
+	if (!client)
+		return -EINVAL;
+
+	/* Keep track of the added device */
+	mutex_lock(&adap->userspace_clients_lock);
+	list_add_tail(&client->detected, &adap->userspace_clients);
+	mutex_unlock(&adap->userspace_clients_lock);
+	dev_info(dev, "%s: Instantiated device %s at 0x%02hx\n", "new_device",
+		 info.type, info.addr);
+
+	return count;
+}
+static DEVICE_ATTR(new_device, S_IWUSR, NULL, i2c_sysfs_new_device);
+c18e OMIT
+
+c19s OMIT
+struct i2c_msg {
+	__u16 addr;	/* slave address			*/
+	__u16 flags;
+	__u16 len;		/* msg length				*/
+	__u8 *buf;		/* pointer to msg data			*/
+};
+c19e OMIT
+
+c20s OMIT
+int __i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+{
+	unsigned long orig_jiffies;
+	int ret, try;
+
+	...
+	/* Retry automatically on arbitration loss */
+	orig_jiffies = jiffies;
+	for (ret = 0, try = 0; try <= adap->retries; try++) {
+		ret = adap->algo->master_xfer(adap, msgs, num);
+		if (ret != -EAGAIN)
+			break;
+		if (time_after(jiffies, orig_jiffies + adap->timeout))
+			break;
+	}
+	...
+	return ret;
+}
+c20e OMIT
+
+c21s OMIT
+static int i2c_register_adapter(struct i2c_adapter *adap)
+{
+	...
+	/* Set default timeout to 1 second if not already set */
+	if (adap->timeout == 0)
+		adap->timeout = HZ;
+	...
+}
+c21e OMIT
+
+c22s OMIT
+xxx-619   [000] ...1    47.566322: i2c_write: i2c-0 #0 a=051 f=0000 l=2 [7f-02]
+xxx-619   [000] ...1    47.567551: i2c_result: i2c-0 n=1 ret=1
+xxx-619   [000] ...1    47.577685: i2c_write: i2c-0 #0 a=051 f=0000 l=1 [7f]
+xxx-619   [000] ...1    47.577691: i2c_read: i2c-0 #1 a=051 f=0001 l=1
+xxx-619   [000] ...1    47.584811: i2c_reply: i2c-0 #1 a=051 f=0001 l=1 [02]
+xxx-619   [000] ...1    47.584814: i2c_result: i2c-0 n=2 ret=2
+c22e OMIT

@@ -5,8 +5,8 @@ Tags: linux, kernel
 * 简介
 
 之前我们已经说过了kernel对高端内存的2种使用方式,
-分别为[[/posts/Permanent_kernel_mapping][永久映射]]
-和[[/posts/Temporary_kernel_mapping][临时映射]],
+分别为[[/post?q=Permanent_kernel_mapping][永久映射]]
+和[[/post?q=Temporary_kernel_mapping][临时映射]],
 今天,我们来说说最后一种方式: 非连续映射.
 
 * 地址范围

@@ -4,7 +4,7 @@ Tags: linux, kernel
 
 * background
 
-[[/posts/Linux_kernel_boot_process_-_part_2][上一篇]]
+[[/post?q=Linux_kernel_boot_process_-_part_2][上一篇]]
 我们已经将compressed kernel解压到了指定位置 , 
 下面我们就接着来看看uncompressed kernel的启动过程 . 
 

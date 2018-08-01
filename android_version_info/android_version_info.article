@@ -1,0 +1,31 @@
+How to add vcs information into binary on Android
+11:00 25 May 2017
+Tags: android
+
+* background
+
+这几天为了定位一个android问题 , 需要知道某个binary是在哪个git reversion ,
+于是便决定将git reverion 编译进binary .
+
+* show version
+
+为了支持显示版本信息 , 这里修改binary支持的参数 , 添加 " -v " 参数 :
+
+.code corpus /binary_code_s OMIT/,/binary_code_e OMIT
+
+这里的 `version` 通过编译时指定 :
+
+.code corpus /android_mk_1_s OMIT/,/android_mk_1_e OMIT
+
+* force rebuild
+
+通过上述修改 , binary便可以显示git reversion , 但是 , 该方法依赖于该文件的更新 ,
+如果该文件没有修改 , make便不会重新编译该文件 , 所以需要让android 编译系统每次都
+编译该文件 :
+
+.code corpus /android_mk_2_s OMIT/,/android_mk_2_e OMIT
+
+这里需要在使用 `local-intermediates-dir` 之前定义 `LOCAL_MODULE_CLASS` 和
+`LOCAL_MODULE` , 否则会报错 . 其中 `xxx` 为文件名 .
+
+FIN.
