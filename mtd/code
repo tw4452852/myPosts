@@ -1,0 +1,595 @@
+mtd_info_s OMIT
+struct mtd_info {
+	u_char type;	     /* MTD类型，包括MTD_NORFLASH,MTD_NANDFLASH等(可参考mtd-abi.h) */
+	uint32_t flags;	     /* MTD属性标志，MTD_WRITEABLE,MTD_NO_ERASE等(可参考mtd-abi.h) */
+	uint64_t size;	     /* mtd设备的大小 */
+	uint32_t erasesize;	 /* MTD设备的擦除单元大小，对于NandFlash来说就是Block的大小 */
+	uint32_t writesize;	 /* 写大小, 对于norFlash是字节,对nandFlash为一页 */
+	uint32_t oobsize;    /* OOB字节数 */
+	uint32_t oobavail;   /* 可用的OOB字节数 */
+	unsigned int erasesize_shift;	/* 擦除单元大小的2进制偏移 */
+	unsigned int writesize_shift;	/* 写大小的2进制偏移 */
+	unsigned int erasesize_mask;	/* 擦除大小的mask */
+	unsigned int writesize_mask;	/* 写大小的mask */
+	const char *name;				/* 名字 */
+	int index;						/* 索引号 */
+	int numeraseregions;			/* 通常为1 */
+	struct mtd_erase_region_info *eraseregions;	/* 可变擦除区域 */
+	
+	void *priv;		/* 设备私有数据指针，对于NandFlash来说指nand_chip结构体 */
+	struct module *owner;	/* 一般设置为THIS_MODULE */
+	
+	/* 擦除函数 */
+	int (*erase) (struct mtd_info *mtd, struct erase_info *instr);
+ 
+	/* 读写flash函数 */
+	int (*read) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
+	int (*write) (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
+ 
+	/* 带oob读写Flash函数 */
+	int (*read_oob) (struct mtd_info *mtd, loff_t from,
+			 struct mtd_oob_ops *ops);
+	int (*write_oob) (struct mtd_info *mtd, loff_t to,
+			 struct mtd_oob_ops *ops);
+ 
+	int (*get_fact_prot_info) (struct mtd_info *mtd, struct otp_info *buf, size_t len);
+	int (*read_fact_prot_reg) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
+	int (*get_user_prot_info) (struct mtd_info *mtd, struct otp_info *buf, size_t len);
+	int (*read_user_prot_reg) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
+	int (*write_user_prot_reg) (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf);
+	int (*lock_user_prot_reg) (struct mtd_info *mtd, loff_t from, size_t len);
+ 
+	int (*writev) (struct mtd_info *mtd, const struct kvec *vecs, unsigned long count, loff_t to, size_t *retlen);
+	int (*panic_write) (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
+	/* Sync */
+	void (*sync) (struct mtd_info *mtd);
+ 
+	/* Chip-supported device locking */
+	int (*lock) (struct mtd_info *mtd, loff_t ofs, uint64_t len);
+	int (*unlock) (struct mtd_info *mtd, loff_t ofs, uint64_t len);
+ 
+	/* 电源管理函数 */
+	int (*suspend) (struct mtd_info *mtd);
+	void (*resume) (struct mtd_info *mtd);
+ 
+	/* 坏块管理函数 */
+	int (*block_isbad) (struct mtd_info *mtd, loff_t ofs);
+	int (*block_markbad) (struct mtd_info *mtd, loff_t ofs);
+ 
+	void (*unpoint) (struct mtd_info *mtd, loff_t from, size_t len);
+	unsigned long (*get_unmapped_area) (struct mtd_info *mtd,
+					    unsigned long len,
+					    unsigned long offset,
+					    unsigned long flags);
+	struct backing_dev_info *backing_dev_info;
+	struct notifier_block reboot_notifier;  /* default mode before reboot */
+ 
+	/* ECC status information */
+	struct mtd_ecc_stats ecc_stats;
+	int subpage_sft;
+	struct device dev;
+	int usecount;
+	int (*get_device) (struct mtd_info *mtd);
+	void (*put_device) (struct mtd_info *mtd);
+};
+mtd_info_e OMIT
+
+mtd_part_s OMIT
+struct mtd_partition {
+	struct mtd_info mtd;
+	struct mtd_info *master;
+	uint64_t offset;
+	struct list_head list;
+};
+mtd_part_e OMIT
+
+nand_chip_s OMIT
+struct nand_chip {
+	void  __iomem	*IO_ADDR_R;		/* 读8位I/O线地址 */
+	void  __iomem	*IO_ADDR_W;		/* 写8位I/O线地址 */
+ 
+	/* 从芯片中读一个字节 */
+	uint8_t	(*read_byte)(struct mtd_info *mtd);		
+	/* 从芯片中读一个字 */
+	u16		(*read_word)(struct mtd_info *mtd);		
+	/* 将缓冲区内容写入芯片 */
+	void	(*write_buf)(struct mtd_info *mtd, const uint8_t *buf, int len);	
+	/* 读芯片读取内容至缓冲区/ */
+	void	(*read_buf)(struct mtd_info *mtd, uint8_t *buf, int len);
+	/* 验证芯片和写入缓冲区中的数据 */
+	int		(*verify_buf)(struct mtd_info *mtd, const uint8_t *buf, int len);
+	/* 选中芯片 */
+	void	(*select_chip)(struct mtd_info *mtd, int chip);
+	/* 检测是否有坏块 */
+	int		(*block_bad)(struct mtd_info *mtd, loff_t ofs, int getchip);
+	/* 标记坏块 */
+	int		(*block_markbad)(struct mtd_info *mtd, loff_t ofs);
+	/* 命令、地址、数据控制函数 */
+	void	(*cmd_ctrl)(struct mtd_info *mtd, int dat,unsigned int ctrl);
+	/* 设备是否就绪 */
+	int		(*dev_ready)(struct mtd_info *mtd);
+	/* 实现命令发送 */
+	void	(*cmdfunc)(struct mtd_info *mtd, unsigned command, int column, int page_addr);
+	int		(*waitfunc)(struct mtd_info *mtd, struct nand_chip *this);
+	/* 擦除命令的处理 */
+	void	(*erase_cmd)(struct mtd_info *mtd, int page);
+	/* 扫描坏块 */
+	int		(*scan_bbt)(struct mtd_info *mtd);
+	int		(*errstat)(struct mtd_info *mtd, struct nand_chip *this, int state, int status, int page);
+	/* 写一页 */
+	int		(*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
+				      const uint8_t *buf, int page, int cached, int raw);
+ 
+	int		chip_delay;			/* 由板决定的延迟时间 */
+	/* 与具体的NAND芯片相关的一些选项，如NAND_NO_AUTOINCR，NAND_BUSWIDTH_16等 */
+	unsigned int	options;	
+ 
+	/* 用位表示的NAND芯片的page大小，如某片NAND芯片
+	 * 的一个page有512个字节，那么page_shift就是9 
+	 */
+	int		 page_shift;
+	/* 用位表示的NAND芯片的每次可擦除的大小，如某片NAND芯片每次可
+	 * 擦除16K字节(通常就是一个block的大小)，那么phys_erase_shift就是14
+	 */
+	int		 phys_erase_shift;
+	/* 用位表示的bad block table的大小，通常一个bbt占用一个block，
+	 * 所以bbt_erase_shift通常与phys_erase_shift相等
+ 	 */
+	int		 bbt_erase_shift;
+	/* 用位表示的NAND芯片的容量 */
+	int		 chip_shift;
+	/* NADN FLASH芯片的数量 */
+	int		 numchips;
+	/* NAND芯片的大小 */
+	uint64_t chipsize;
+	int		 pagemask;
+	int		 pagebuf;
+	int		 subpagesize;
+	uint8_t	 cellinfo;
+	int		 badblockpos;
+	nand_state_t	state;
+	uint8_t		*oob_poi;
+	struct nand_hw_control  *controller;
+	struct nand_ecclayout	*ecclayout;	/* ECC布局 */
+	
+	struct nand_ecc_ctrl ecc;	/* ECC校验结构体，里面有大量的函数进行ECC校验 */
+	struct nand_buffers *buffers;
+	struct nand_hw_control hwcontrol;
+	struct mtd_oob_ops ops;
+	uint8_t		*bbt;
+	struct nand_bbt_descr	*bbt_td;
+	struct nand_bbt_descr	*bbt_md;
+	struct nand_bbt_descr	*badblock_pattern;
+	void		*priv;
+};
+nand_chip_e OMIT
+
+read_id_s OMIT
+static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+						  struct nand_chip *chip,
+						  int *maf_id, int *dev_id,
+						  struct nand_flash_dev *type)
+{
+	u8 id_data[8];
+	
+	/* Select the device */
+	chip->select_chip(mtd, 0);
+
+	/*
+	 * Reset the chip, required by some chips (e.g. Micron MT29FxGxxxxx)
+	 * after power-up.
+	 */
+	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
+
+	/* Send the command for reading device ID */
+	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
+
+	...
+
+	/* Read entire ID string */
+	for (i = 0; i < 8; i++)
+		id_data[i] = chip->read_byte(mtd);
+
+read_id_e OMIT
+
+nand_flash_dev_s OMIT
+struct nand_flash_dev {
+	char *name;
+	union {
+		struct {
+			uint8_t mfr_id;
+			uint8_t dev_id;
+		};
+		uint8_t id[NAND_MAX_ID_LEN];
+	};
+	unsigned int pagesize;
+	unsigned int chipsize;
+	unsigned int erasesize;
+	unsigned int options;
+	uint16_t id_len;
+	uint16_t oobsize;
+	struct {
+		uint16_t strength_ds;
+		uint16_t step_ds;
+	} ecc;
+	int onfi_timing_mode_default;
+};
+nand_flash_dev_e OMIT
+
+find_id_s OMIT
+if (!type)
+	type = nand_flash_ids;
+
+for (; type->name != NULL; type++) {
+	if (is_full_id_nand(type)) {
+		if (find_full_id_nand(mtd, chip, type, id_data, &busw))
+			goto ident_done;
+	} else if (*dev_id == type->dev_id) {
+			break;
+	}
+}
+find_id_e OMIT
+
+
+check_buff_s OMIT
+int nand_scan_tail(struct mtd_info *mtd)
+{
+	struct nand_buffers *nbuf;
+
+	if (!(chip->options & NAND_OWN_BUFFERS)) {
+		nbuf = kzalloc(sizeof(*nbuf) + mtd->writesize
+				+ mtd->oobsize * 3, GFP_KERNEL);
+		if (!nbuf)
+			return -ENOMEM;
+		nbuf->ecccalc = (uint8_t *)(nbuf + 1);
+		nbuf->ecccode = nbuf->ecccalc + mtd->oobsize;
+		nbuf->databuf = nbuf->ecccode + mtd->oobsize;
+
+		chip->buffers = nbuf;
+	} else {
+		if (!chip->buffers)
+			return -ENOMEM;
+	}
+check_buff_e OMIT
+
+check_ecc_layout_s OMIT
+if (!ecc->layout && (ecc->mode != NAND_ECC_SOFT_BCH)) {
+	switch (mtd->oobsize) {
+	case 8:
+		ecc->layout = &nand_oob_8;
+		break;
+	case 16:
+		ecc->layout = &nand_oob_16;
+		break;
+	case 64:
+		ecc->layout = &nand_oob_64;
+		break;
+	case 128:
+		ecc->layout = &nand_oob_128;
+		break;
+	default:
+		pr_warn("No oob scheme defined for oobsize %d\n",
+			   mtd->oobsize);
+		BUG();
+	}
+}
+check_ecc_layout_e OMIT
+
+check_function_pointers_s OMIT
+	switch (ecc->mode) {
+	case NAND_ECC_HW_OOB_FIRST:
+		...
+		if (!ecc->read_page)
+			ecc->read_page = nand_read_page_hwecc_oob_first;
+	case NAND_ECC_HW:
+		/* Use standard hwecc read page function? */
+		if (!ecc->read_page)
+			ecc->read_page = nand_read_page_hwecc;
+		if (!ecc->write_page)
+			ecc->write_page = nand_write_page_hwecc;
+		...
+	case NAND_ECC_HW_SYNDROME:
+		...
+		break;
+	case NAND_ECC_SOFT:
+		...
+		break;
+	case NAND_ECC_SOFT_BCH:
+		...
+		break;
+
+	case NAND_ECC_NONE:
+		pr_warn("NAND_ECC_NONE selected by board driver. This is not recommended!\n");
+		ecc->read_page = nand_read_page_raw;
+		ecc->write_page = nand_write_page_raw;
+		ecc->read_oob = nand_read_oob_std;
+		ecc->read_page_raw = nand_read_page_raw;
+		ecc->write_page_raw = nand_write_page_raw;
+		ecc->write_oob = nand_write_oob_std;
+		ecc->size = mtd->writesize;
+		ecc->bytes = 0;
+		ecc->strength = 0;
+		break;
+	default:
+		pr_warn("Invalid NAND_ECC_MODE %d\n", ecc->mode);
+		BUG();
+	}
+check_function_pointers_e OMIT
+
+mtd_remain_ecc_s OMIT
+mtd->type = nand_is_slc(chip) ? MTD_NANDFLASH : MTD_MLCNANDFLASH;
+mtd->flags = (chip->options & NAND_ROM) ? MTD_CAP_ROM :
+					MTD_CAP_NANDFLASH;
+mtd->_erase = nand_erase;
+mtd->_point = NULL;
+mtd->_unpoint = NULL;
+mtd->_read = nand_read;
+mtd->_write = nand_write;
+mtd->_panic_write = panic_nand_write;
+mtd->_read_oob = nand_read_oob;
+mtd->_write_oob = nand_write_oob;
+mtd->_sync = nand_sync;
+mtd->_lock = NULL;
+mtd->_unlock = NULL;
+mtd->_suspend = nand_suspend;
+mtd->_resume = nand_resume;
+mtd->_reboot = nand_shutdown;
+mtd->_block_isreserved = nand_block_isreserved;
+mtd->_block_isbad = nand_block_isbad;
+mtd->_block_markbad = nand_block_markbad;
+mtd->writebufsize = mtd->writesize;
+
+mtd->ecclayout = ecc->layout;
+mtd->ecc_strength = ecc->strength;
+mtd->ecc_step_size = ecc->size;
+mtd_remain_ecc_e OMIT
+
+check_scan_bbt_s OMIT
+/* Check, if we should skip the bad block table scan */
+if (chip->options & NAND_SKIP_BBTSCAN)
+	return 0;
+
+/* Build bad block table */
+return chip->scan_bbt(mtd);
+}
+check_scan_bbt_e OMIT
+
+bbt_flag_s OMIT
+#define BBT_BLOCK_GOOD		0x00 // 好块
+#define BBT_BLOCK_WORN		0x01 // 由于长时间使用导致的坏块
+#define BBT_BLOCK_RESERVED	0x02
+#define BBT_BLOCK_FACTORY_BAD	0x03 // 出厂时，厂商标记的坏块
+bbt_flag_e OMIT
+
+nand_bbt_descr_s OMIT
+struct nand_bbt_descr {
+	int options;
+	int offs; // pattern 在oob区域内的偏移
+	int len; // pattern 的长度
+	uint8_t *pattern;
+	...
+};
+
+static uint8_t scan_ff_pattern[] = { 0xff, 0xff };
+nand_bbt_descr_e OMIT
+
+alloc_bbt_s OMIT
+int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
+{
+	len = mtd->size >> (this->bbt_erase_shift + 2);
+	/*
+	 * Allocate memory (2bit per block) and clear the memory bad block
+	 * table.
+	 */
+	this->bbt = kzalloc(len, GFP_KERNEL);
+	if (!this->bbt)
+		return -ENOMEM;
+alloc_bbt_e OMIT
+
+scan_bb_s OMIT
+for (i = startblock; i < numblocks; i++) {
+	int ret;
+
+	BUG_ON(bd->options & NAND_BBT_NO_OOB);
+
+	ret = scan_block_fast(mtd, bd, from, buf, numpages);
+	if (ret < 0)
+		return ret;
+
+	if (ret) {
+		bbt_mark_entry(this, i, BBT_BLOCK_FACTORY_BAD);
+		pr_warn("Bad eraseblock %d at 0x%012llx\n",
+			i, (unsigned long long)from);
+		mtd->ecc_stats.badblocks++;
+	}
+
+	from += (1 << this->bbt_erase_shift);
+}
+
+static inline void bbt_mark_entry(struct nand_chip *chip, int block,
+		uint8_t mark)
+{
+	uint8_t msk = (mark & BBT_ENTRY_MASK) << ((block & BBT_ENTRY_MASK) * 2);
+	chip->bbt[block >> BBT_ENTRY_SHIFT] |= msk;
+}
+scan_bb_e OMIT
+
+mtd_oob_ops_s OMIT
+struct mtd_oob_ops {
+	unsigned int	mode; // 
+	size_t		len; // 期望read/write的数据的长度
+	size_t		retlen; // 实际read/write的数据的长度
+	size_t		ooblen; // 期望读取read/write oob数据的长度
+	size_t		oobretlen; // 实际read/write oob数据的长度
+	uint32_t	ooboffs; // read/write oob数据在oob区域内的偏移
+	uint8_t		*datbuf; // read/write 数据的buffer
+	uint8_t		*oobbuf; // read/write oob数据的buffer
+}
+mtd_oob_ops_e OMIT
+
+nand_get_device_s OMIT
+static int nand_get_device(struct mtd_info *mtd, int new_state)
+{
+	struct nand_chip *chip = mtd->priv;
+	spinlock_t *lock = &chip->controller->lock;
+	wait_queue_head_t *wq = &chip->controller->wq;
+	DECLARE_WAITQUEUE(wait, current);
+retry:
+	spin_lock(lock);
+
+	...
+	if (chip->controller->active == chip && chip->state == FL_READY) {
+		chip->state = new_state;
+		spin_unlock(lock);
+		return 0;
+	}
+	...
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	add_wait_queue(wq, &wait);
+	spin_unlock(lock);
+	schedule();
+	remove_wait_queue(wq, &wait);
+	goto retry;
+}
+nand_get_device_e OMIT
+
+nand_release_device_s OMIT
+static void nand_release_device(struct mtd_info *mtd)
+{
+	struct nand_chip *chip = mtd->priv;
+
+	/* Release the controller and the chip */
+	spin_lock(&chip->controller->lock);
+	chip->controller->active = NULL;
+	chip->state = FL_READY;
+	wake_up(&chip->controller->wq);
+	spin_unlock(&chip->controller->lock);
+}
+nand_release_device_e OMIT
+
+oob_mode_s OMIT
+enum {
+	MTD_OPS_PLACE_OOB = 0, // read/write oob数据在oob区域的指定位置
+	MTD_OPS_AUTO_OOB = 1, // read/write oob数据在oob中的free areas区域
+	MTD_OPS_RAW = 2, // 关闭ecc read/write oob数据在oob区域的指定位置
+};
+oob_mode_e OMIT
+
+read_oob_s OMIT
+static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
+			    struct mtd_oob_ops *ops)
+{
+	...
+
+	while (1) {
+		if (ops->mode == MTD_OPS_RAW)
+			ret = chip->ecc.read_oob_raw(mtd, chip, page);
+		else
+			ret = chip->ecc.read_oob(mtd, chip, page);
+
+		if (ret < 0)
+			break;
+
+		len = min(len, readlen);
+		buf = nand_transfer_oob(chip, buf, ops, len);
+
+		...
+		readlen -= len;
+		if (!readlen)
+			break;
+
+		/* Increment page address */
+		realpage++;
+
+		page = realpage & chip->pagemask;
+	}
+
+	ops->oobretlen = ops->ooblen - readlen;
+	...
+	return  mtd->ecc_stats.corrected - stats.corrected ? -EUCLEAN : 0;
+}
+
+read_oob_e OMIT
+
+nand_transfer_oob_s OMIT
+static uint8_t *nand_transfer_oob(struct nand_chip *chip, uint8_t *oob,
+				  struct mtd_oob_ops *ops, size_t len)
+{
+	switch (ops->mode) {
+
+	case MTD_OPS_PLACE_OOB:
+	case MTD_OPS_RAW:
+		memcpy(oob, chip->oob_poi + ops->ooboffs, len);
+		return oob + len;
+
+	case MTD_OPS_AUTO_OOB: {
+		struct nand_oobfree *free = chip->ecc.layout->oobfree;
+		uint32_t boffs = 0, roffs = ops->ooboffs;
+		size_t bytes = 0;
+
+		for (; free->length && len; free++, len -= bytes) {
+			/* Read request not from offset 0? */
+			if (unlikely(roffs)) {
+				if (roffs >= free->length) {
+					roffs -= free->length;
+					continue;
+				}
+				boffs = free->offset + roffs;
+				bytes = min_t(size_t, len,
+						  (free->length - roffs));
+				roffs = 0;
+			} else {
+				bytes = min_t(size_t, len, free->length);
+				boffs = free->offset;
+			}
+			memcpy(oob, chip->oob_poi + boffs, bytes);
+			oob += bytes;
+		}
+		return oob;
+	}
+	default:
+		BUG();
+	}
+	return NULL;
+}
+nand_transfer_oob_e OMIT
+
+nand_read_ops_copy_s OMIT
+	while (1) {
+		if (realpage != chip->pagebuf || oob) {
+		...
+		} else {
+			memcpy(buf, chip->buffers->databuf + col, bytes);
+			buf += bytes;
+			...
+		}
+nand_read_ops_copy_e OMIT
+
+nand_read_ops_s OMIT
+if (realpage != chip->pagebuf || oob) {
+	bufpoi = use_bufpoi ? chip->buffers->databuf : buf;
+
+	if (use_bufpoi && aligned)
+		pr_debug("%s: using read bounce buffer for buf@%p\n",
+				 __func__, buf);
+
+read_retry:
+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
+
+	/*
+	 * Now read the page into the buffer.  Absent an error,
+	 * the read methods return max bitflips per ecc step.
+	 */
+	if (unlikely(ops->mode == MTD_OPS_RAW))
+		ret = chip->ecc.read_page_raw(mtd, chip, bufpoi,
+						  oob_required,
+						  page);
+	else if (!aligned && NAND_HAS_SUBPAGE_READ(chip) &&
+		 !oob)
+		ret = chip->ecc.read_subpage(mtd, chip,
+					col, bytes, bufpoi,
+					page);
+	else
+		ret = chip->ecc.read_page(mtd, chip, bufpoi,
+					  oob_required, page);
+nand_read_ops_e OMIT
