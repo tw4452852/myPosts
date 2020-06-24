@@ -1,0 +1,135 @@
+---
+title: RFB Caching
+time: 14:00 03 Nov 2015
+tags: vnc
+---
+
+* Definitions
+
+- RFB Client: 用于连接 `RFB` 服务端,根据服务端的 `framebuffer` 绘制本地的 `framebuffer` .
+- RFB Server: 用于提供给客户端有关 `framebuffer` 相关的信息.
+- RFB Pseudo Encoding: 在原有 `RFB` 标准的协议编码之外,客户端自定义的数据编码,用于告知服务端其支持该扩展功能.
+- RFB Changed Rectangles: 表示 `framebuffer` 制定区域的变化信息.
+
+* RFB FramebufferUpdates
+
+在 `RFB` 协议初始化握手完成之后, `RFB` 客户端向服务端请求 `framebuffer` 更新
+( `framebufferupdaterequest` ), 请求更新的区域大小为客户端的 `framebuffer`
+的大小, 服务端计算请求区域的变化信息,并将其作为 `framebufferupdate` 回复
+消息的一部分返回给客户端.
+
+`framebufferupdate` 消息中包含一系列矩形区域的像素信息,客户端根据其位置信息,
+将其填充到本地的 `framebuffer` 中.一次 `framebufferupdaterequest` 和
+`framebufferupdate` 中间的间隔时间是不确定的(包括服务端计算脏区域,和网络传输延迟)
+
+* RFB Caching
+
+`RFB` 协议在客户端和服务端之间会有大量的数据交互.
+减少网络带宽的使用将对交互性起着决定性作用.
+通过复用传输数据中的冗余信息,从而减少网络带宽,是其中的一种方法.
+(也成为数据压缩),数据压缩会给客户端和服务端带来额外的数据计算量,
+不过该 `overhead` 在现在的硬件设备上是可以忽略不及.
+`VNC` 和 `RFB` 协议使用多种数据编码方式( `encoding` )来达到数据压缩的功能.
+
+编码方式包括 `Hextile` , `RRE` , `ZRLE` , `Tight` 等等.
+使用数据编码可以有效的降低一次 `framebuffer` 更新带来的数据传输量,
+但是在多次更新的情景下,效果不明显.
+`RFB` `Caching` 将通过复用多次 `framebuffer` 更新之间的冗余信息,
+来减少数据传输量.
+
+例如,试想这样一个场景,一个 `RFB` 客户端将一个窗口最大化,然后立刻又将其
+最小化,这将导致 `framebuffer` 的状态经过如下变化:
+
+- 初始状态,没有窗口最大化.
+- 窗口最大化.
+- 没有窗口最大化.
+
+在一个相对快速的网络环境下, `VNC` 协议将触发三次独立的 `framebufferupdate`
+更新信息,分别对应上述三个状态.第一次和第三次 `framebuffer` 的状态是相似的.
+`RFB` `Caching` 将充分利用这些状态变化所产生的冗余数据.
+
+** Algorithm
+
+每次从服务端产生的 `framebufferupdate` 由一系列变化的矩形区域组成,
+这些相同的变化区域将作为 `caching` 的最小单位.
+
+在最开始的 `framebufferupdate` ,服务端对 `framebuffer` 中每个变化矩形区域
+计算生成一个随机数( `hash` ),所有的 `hash` 将保存在服务端的 `cache` `table` 中.
+这些 `hash` 将被用于决定所属的矩形区域是否已被发送给客户端,
+因此该 `hash` 必须是全局唯一,同时必须具备以下属性:
+
+- 矩形区域中的任何变化,该 `hash` 将变化.
+- 不同的矩形区域产生相同的 `hash` 的概率应该非常小.
+- `hash` 与设备时间独立.
+- 该 `hash` 计算产生的时间不能太长.
+
+然后服务端按照原有的流程发送该 `framebufferupdate` .
+
+一旦客户端收到该更新信息,它将该 `caching` 信息存入本地的 `cache` `table` 中.
+
+对于后续的 `framebufferupdate` ,服务端对于变化区域计算 `hash` ,然后在 `cache`
+`table` 中查找该 `hash` 是否已经存在.如果已经存在,服务端将告知客户端该区域
+信息从客户端的 `cache` 中获取.如果不存在,那么该区域的数据信息该按照原有
+方式编码传输.因此单个的 `framebufferupdate` 可能将混合 `cached` 和 `nocached`
+矩形区域信息组成.
+
+一旦客户端受到这样一系列的矩形区域,它对每个区域的状态进行确认,
+如果 `cached` ,它将从 `cache` 中获得该区域的像素的信息,
+反之,它将通过解码得到像素信息,同时更新对应的 `cache` `table` .
+
+通过使用这种方案,服务端和客户端将使用新的数据更新其 `cache` `table` ,
+这里将使用 `LRU` 算法,服务端和客户端将保持 `cache` 的同步,
+对于 `cache` 的管理可以在协议开始的握手阶段进行协商( `cache`
+的大小等等).
+
+.image sequence.png
+
+* Protocol Extension for RFB Caching
+
+** RFB Cache Pseudo Encoding
+
+`RFB` 客户端将其对 `cache` 的处理能力将通过 `RFB` 协议扩展的形式与服务端协商.
+客户端将扩展其 `encoding` 列表,并通过 `SetEncodings` 协议消息发送给服务端.
+
+** RFB ServerCacheInit
+
+`RFB` `ServerCacheInit` 消息是服务端发送给客户端的初始化握手数据包.
+该消息将确认 `Cache` `PseudoEncoding` 会被使用在后续的 `RFB` 协议数据包中.
+该数据包将包含如下字段:
+
+- message type(u8): `RFB` 协议定义的消息类型.
+- cache type(u8): `cache` 协议的版本号(1.0, 1.1 ...).
+- maximum entries(u16): `cache` 中的条目数限制.
+- algorithm(u8): 算法选择( `LRU` , `FIFO` ).
+- reserved(u8): 预留.
+- miniumum cache data size(u16): 对于小图片,使用缓存效果不明显.这里规定使用 `cache` 的最小图片大小.
+
+** RFB ClientCacheInit
+
+`RFB` 客户端用于 `cache` 相关信息的确认.
+该数据包将包含字段同 `ServerCacheInit` :
+
+- message type(u8)
+- cache type(u8): 客户端可以返回低于服务端支持的版本.
+- maximum entries(u16):客户端可以返回服务器建议的 `cache` 大小,返回0说明客户端不支持 `caching`
+- algorithm(u8): 客户端将从服务端支持的算法从选择一个支持的算法.
+- reserved(u8): 预留.
+- miniumum cache data size(u16):客户端可能返回给服务端不用的大小,服务端应使用客户端制定的大小. 
+
+** RFB CacheHit
+
+用于服务端告知客户端从 `cache` 中获取像素信息.该数据包结构同 `RFB` 标准的
+`encoded` `rectangle` :
+
+- x position(u16)
+- y position(u16)
+- width(u16)
+- height(u16)
+- encoding-type(u32)
+
+其中的 `encoding-type` 为 `RFB` `Cache`.
+`encoded` `rectangle` 的数据部分为该区域在 `cache` `table` 中的 `index` :
+
+- cache index(u32)
+
+FIN.

@@ -1,0 +1,193 @@
+---
+title: Linux kernel boot process - part 2
+time: 15:01 27 Feb 2017
+tags: linux, kernel
+---
+
+* background
+
+这里继续[[/post?q=Linux_kernel_boot_process_-_part_1][上一篇]]
+分析kernel从protect mode到long mode的过程.
+
+在开始之前 , 有必要了解下kernel被bootloader加载到内存的位置 : 
+
+.code corpus /mm_s OMIT/,/mm_e OMIT
+
+这里的 `X` , 不同的bootloader可能不同 , 当前在我本地为 0x10000 .
+
+下面我们就从protect mode的第一条指令开始分析 . 
+
+* prepare to jump to long mode
+
+由于我们测试的是x86_64的kernel , 所以 , 首个指令位于
+`arch/x86/boot/compressed/header_64.S` 中 , 
+首先是clear direction 标记 : 
+
+.code corpus /header_1_s OMIT/,/header_1_e OMIT
+
+接着 , 检查bootloader是否要求保存段寄存器的值 , 
+如果不需要 , 将ds , es , ss 段寄存器初始化位ds段描述符.
+
+.code corpus /header_2_s OMIT/,/header_2_e OMIT
+
+下面需要计算出当前运行的地址和编译时的地址的差值 , 
+有了这个差值 , 后续我们就能根据编译时的地址得到当前运行时真实的物理地址 , 
+反之亦然 . 
+
+这里采用的方法是通过 call 指令得到后一条指令的地址 : 
+
+.code corpus /header_3_s OMIT/,/header_3_e OMIT
+
+这里通过使用kernel header中的4字节的通用字段充当临时的stack , 
+当调用call指令时 , cpu会将call指令的后一条指令的物理地址push到stack上 . 
+之后我们就可能同stack上取道其物理地址 , 最后和其编译时地址相减便得到其差值 . 
+该差值最终保存在ebp寄存器中 : 
+
+.code corpus /get_ip_s OMIT/,/get_ip_e OMIT
+
+得到了该差值 , 紧接着便是调整stack寄存器 : 
+
+.code corpus /header_4_s OMIT/,/header_4_e OMIT
+
+接着检查cpu是否支持64位 : 
+
+.code corpus /header_5_s OMIT/,/header_5_e OMIT
+
+由于kernel支持relocation , 这里还需要计算出relocate的目标地址 :
+
+.code corpus /header_6_s OMIT/,/header_6_e OMIT
+
+默认情况下relocate的基地址为 `LOAD_PHYSICAL_ADDR` ( 0x1000000 ) .
+该地址用于存放解压之后的kernel . 
+
+同时 , 这里还需要将解压代码和压缩的kernel拷贝到relocate目标区域的尾部 .
+
+.code corpus /header_7_s OMIT/,/header_7_e OMIT
+
+可以看出 , 这里通过查看kernel header中的init_size字段 ,
+获得relocate区域大小 , 再减去 `_end` 即可 . 
+
+.code corpus /relocation_s OMIT/,/relocation_e OMIT
+
+通过compressed vmlinux的ld脚本 , 可以看出decompress code和compressed
+kernel在内存中的分布 : 
+
+.code corpus /compressed_s OMIT/,/compressed_e OMIT
+
+接着 , 调整并加载64bit的gdt : 
+
+.code corpus /header_8_s OMIT/,/header_8_e OMIT
+
+打开PAE : 
+
+.code corpus /header_9_s OMIT/,/header_9_e OMIT
+
+下面便是重新建立临时的页表 , 用于后续进入long mode . 
+
+.code corpus /header_10_s OMIT/,/header_10_e OMIT
+
+由于这里建立的0-4G对应的地址空间 , 所以这里需要1个PML4E (4G/(1<<39)),
+4个pdpe(4G/(1<<30)), 2048个pde(4G/(1<<21)), 每个物理页大小为2M , 
+所以这里需要1个pgdt+1个pudt+4个(2048/512)个pmdt, 而每个table包含512 (1<<9)
+个表项 , 每个表项为8字节 , 所以总共需要24kb(8*512*6)的空间 , 
+当然从pgtable的定义中也可以得到验证 : 
+
+.code corpus /header_11_s OMIT/,/header_11_e OMIT
+
+最终 , 4级页表的结构如下 : 
+
+.code corpus /pgtable_s OMIT/,/pgtable_e OMIT
+
+最后 , enable long mode : 
+
+.code corpus /header_12_s OMIT/,/header_12_e OMIT
+
+并进入long mode的首个指令 `startup_64` : 
+
+.code corpus /header_13_s OMIT/,/header_13_e OMIT
+
+* long mode
+
+首先 , 将通用段寄存器清0 : 
+
+.code corpus /long_mode_1_s OMIT/,/long_mode_1_e OMIT
+
+将eflags寄存器清 0 : 
+
+.code corpus /long_mode_2_s OMIT/,/long_mode_2_e OMIT
+
+接着 , 将compressed kernel和decompress code拷贝到relocation区域的尾部 : 
+
+.code corpus /long_mode_3_s OMIT/,/long_mode_3_e OMIT
+
+紧接着 , 跳入到目标区域继续执行后续的代码 : 
+
+.code corpus /long_mode_4_s OMIT/,/long_mode_4_e OMIT
+
+将bss段清0 : 
+
+.code corpus /long_mode_5_s OMIT/,/long_mode_5_e OMIT
+
+因为relocation , 这里还需要调整GOT段内的地址 : 
+
+.code corpus /long_mode_6_s OMIT/,/long_mode_6_e OMIT
+
+一些准备就绪 , 下面就需要解压compressed kernel到我们指定的目标区域 , 
+该工作由 `extract_kernel` 函数完成 : 
+
+.code corpus /long_mode_7_s OMIT/,/long_mode_7_e OMIT
+
+该函数的参数如下 : 
+
+1. rmode: 指向保存的启动参数 .
+
+2. heap: 指向可用的heap的地址 . 这里的heap是预先申请好的一段空间 : 
+
+.code corpus /long_mode_8_s OMIT/,/long_mode_8_e OMIT
+
+3. input_data: 指向compressed kernel
+
+4. input_len: compressed kernel的大小
+
+5. output : 指向指定的解压地址
+
+6. output_len : 指向uncompressed kernel的大小
+
+这里的 `input_data` , `input_len` , `output_len` 的值是通过一个叫mkpiggy的
+程序在编译时生成的 .
+
+该程序接收的参数为经过压缩的kernel文件 ,
+之后通过读取该文件的大小 便得到了compressed kernel的大小 , 
+通过读取该文件的后4个字节 , 得到uncompressed kernel的大小 , 
+通过 `.incbin` 将compressed kernel的内容包含进来 . 
+
+该程序最终将上述结果输出到 `piggy.S` 中 , 下面是我这里生成的该文件 : 
+
+.code corpus /piggy_s OMIT/,/piggy_e OMIT
+
+在 `extract_kernel` 中 , 首先会选择最终的解压地址 ,
+当 `kaslr` 打开时 , 会在空闲的内存空间中随机寻找一块区域 , 
+否则仍选择传入的output地址作为最终的解压地址 . 
+
+.code corpus /long_mode_9_s OMIT/,/long_mode_9_e OMIT
+
+最终 , 根据编译时选择的压缩格式调用具体的解压方法进行解压 : 
+
+.code corpus /long_mode_10_s OMIT/,/long_mode_10_e OMIT
+
+当完成解压之后 , 还有两件事需要完成 : 
+
+1. 由于uncompressed kernel 本身是一个elf文件 , 
+所以这里需要将elf文件中的 loadable segment拷贝到具体的位置中 : 
+
+.code corpus /pt_load_s OMIT/,/pt_load_e OMIT
+
+2. 更新追加在uncompressed尾部的relocation table : 
+
+.code corpus /reloc_s OMIT/,/reloc_e OMIT
+
+最终 , 返回uncompressed kernel的首地址并跳转到那 : 
+
+.code corpus /long_mode_11_s OMIT/,/long_mode_11_e OMIT
+
+FIN.

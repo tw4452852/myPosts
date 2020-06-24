@@ -1,0 +1,63 @@
+---
+title: Getaddrinfo bug on Android_64
+time: 11:18 22 Feb 2017
+tags: android
+---
+
+* background
+
+这几天在android x86_64上尝试运行一个游戏 , 但是程序无法启动 ,
+从logcat中 , 游戏主线程抛出如下异常 :
+
+.code corpus /game_stack_start OMIT/,/game_stack_end OMIT
+
+可以看出 , 问题出在dns解析失败 .
+
+* getaddrinfo
+
+由于android中使用的是自己的bionic libc ,
+而dns解析最终是通过getaddrinfo实现 ,
+所以首先从它开始分析 .
+
+android dns解析整体是c/s 架构的 , 
+当程序中调用getaddrinfo时 ,
+都是通过将dns请求发送给netd服务 , 
+由它统一处理 , 然后将结果返回给客户端 ,
+而服务端和客户端之间是通过socket进行通信的 .
+
+首先来看下服务端 , 也就是netd处理的相关代码 : 
+
+.code corpus /netd_start OMIT/,/netd_end OMIT
+
+可以看出 , 当解析成功时 , 首先返回一个状态码 (ResponseCode::DnsProxyQueryResult)
+紧接着 , 将每个struct addrinfo返回给客户端 , 
+由于struct addrinfo中包含其他字符串指针 , 
+所以这里还需要将字符串通过值拷贝传给客户端 . 
+
+客户端同样有相对应的接收流程 :
+
+.code corpus /bionic_start OMIT/,/bionic_end OMIT
+
+这里 , 所有的数据都是先传输一个4字节的长度 ,
+再将具体的数据以字节流的方式传输 , 
+当然 , 这里使用的都是网络字节序的方式 . 
+
+这里其实是存在一个问题 , 
+在传输struct addrinfo时 , 需要先传输其大小 ,
+所以 , 如果客户端是32位 , 而服务端是64位时 , 
+那么两端的大小就不同 . 
+下面我们来看下在32位时， 它的大小 : 
+
+.code corpus /sizeof_32_begin OMIT/,/sizeof_32_end OMIT
+
+在64位的情况下 : 
+
+.code corpus /sizeof_64_begin OMIT/,/sizeof_64_end OMIT
+
+果然 , 所以该问题出现在客户端和服务端不匹配的情况下 . 
+
+问题既然已经清楚了 , 解决思路就是避免传输 struct addrinfo的大小 . 
+同时 ,
+google官方已经提供一个[[https://android-review.googlesource.com/#/q/Iee5ef802ebbf2e000b2593643de4eec46f296c04][Fix]].
+
+FIN.

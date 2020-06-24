@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Totorow - Tw's blog</title>
+	{{include "/includes/header.html"}}
+  </head>
+  <body>
+	{{range $post := listFiles "./posts/"}}
+	  <p class="container mx-auto"><a href={{printf "/post.html?q=%s" $post}}>{{$post}}</a></p>
+	{{end}}
+  </body>
+</html>
